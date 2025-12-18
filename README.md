@@ -22,14 +22,13 @@ project-root/
 │
 ├── frontend/
 ├── backend/
-└── agents/
 
 
 ## Lokale Entwicklungsumgebung (Python venv + gemeinsame Dependencies)
 
 Dieses Projekt nutzt für Backend und Agents jeweils eine eigene Python-Virtual-Environment.  
 Bevor du startest: **Immer zuerst in das passende Verzeichnis wechseln**  
-(`cd backend` oder `cd agents`).
+(`cd backend`).
 
 ---
 
