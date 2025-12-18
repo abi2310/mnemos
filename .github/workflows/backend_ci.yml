@@ -7,7 +7,7 @@ on:
 
 defaults:
   run:
-    working-directory: mnemos/backen
+    working-directory: backend
 
 jobs:
   build-test-lint:
