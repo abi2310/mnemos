@@ -51,3 +51,6 @@ pip install -r requirements.txt
 
 pip install <paketname>
 pip freeze > requirements.txt
+
+### Backend starten
+python -m app.main  
