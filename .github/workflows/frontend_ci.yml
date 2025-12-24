@@ -35,7 +35,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          if [ -f package-lock.json ]; then
+            echo "Found package-lock.json — attempting clean install with npm ci"
+            npm ci || (echo "npm ci failed — falling back to npm install to regenerate lockfile" && npm install)
+          else
+            npm install
+          fi
 
       - name: Lint (if available)
         run: |
