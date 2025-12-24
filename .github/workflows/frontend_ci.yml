@@ -1,0 +1,64 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  build-test-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Lint (if available)
+        run: |
+          if npm pkg get scripts.lint | grep -vq null; then
+            npm run lint
+          else
+            echo "no lint script defined, skipping"
+          fi
+
+      - name: Test (if available)
+        env:
+          CI: true
+        run: |
+          if npm pkg get scripts.test | grep -vq null; then
+            npm test
+          else
+            echo "no test script defined, skipping"
+          fi
+
+      - name: Build (if available)
+        run: |
+          if npm pkg get scripts.build | grep -vq null; then
+            npm run build
+          else
+            echo "no build script defined, skipping"
+          fi
