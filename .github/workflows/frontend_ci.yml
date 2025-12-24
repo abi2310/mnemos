@@ -50,6 +50,7 @@ jobs:
             npm run lint || echo "lint failed (non-zero exit) — continuing"
           else
             echo "no lint script defined in package.json, skipping"
+            exit 1
           fi
 
       - name: Test (if available)
@@ -60,6 +61,7 @@ jobs:
             npm test -- --watchAll=false || exit 1
           else
             echo "no test script defined, skipping"
+            exit 1
           fi
 
       - name: Build (if available)
@@ -68,4 +70,5 @@ jobs:
             npm run build
           else
             echo "no build script defined, skipping"
+            exit 1
           fi
