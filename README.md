@@ -54,3 +54,11 @@ pip freeze > requirements.txt
 
 ### Backend starten
 python -m app.main  
+
+### Test starten im Backend
+
+Nur Tests starten
+pytest -q
+
+Tests mit Coverage starten
+python -m pytest -q --cov=app --cov-report=term-missing
