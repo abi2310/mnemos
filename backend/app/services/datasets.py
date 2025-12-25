@@ -116,7 +116,7 @@ class DatasetService:
             nullable = df[col_name].isna().any()
             columns.append(
                 ColumnSchema(
-                    name=col_name,
+                    name=str(col_name),
                     dtype=mapped,
                     nullable=bool(nullable),
                 )
