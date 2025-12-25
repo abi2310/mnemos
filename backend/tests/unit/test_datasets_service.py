@@ -48,7 +48,7 @@ def test_list_and_get(tmp_path):
     u1 = DummyUpload("a.csv", b"x\n")
     u2 = DummyUpload("b.csv", b"y\n")
     m1 = svc.create_from_upload(u1)
-    m2 = svc.create_from_upload(u2)
+    svc.create_from_upload(u2)
 
     all_items = svc.list_all()
     assert len(all_items) == 2

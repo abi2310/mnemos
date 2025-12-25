@@ -64,7 +64,6 @@ def test_list_and_get_endpoints(client):
 
     resp2 = client.post("/api/v1/datasets", files={"file": ("b.csv", "y\n", "text/csv")})
     assert resp2.status_code == 201
-    d2 = resp2.json()
 
     # list all
     list_resp = client.get("/api/v1/datasets")
