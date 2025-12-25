@@ -55,3 +55,27 @@ def test_list_and_get(tmp_path):
 
     got = svc.get(m1.dataset_id)
     assert got.dataset_id == m1.dataset_id
+
+    def test_infer_schema_csv(tmp_path):
+        from app.services.storage import StorageService
+        from app.services.datasets import DatasetService
+
+        storage = StorageService(tmp_path)
+        svc = DatasetService(storage)
+
+        csv = b"col1,col2\n1,2\n3,4\n"
+        class U:
+            def __init__(self, filename, content):
+                self.filename = filename
+                import io
+
+                self.file = io.BytesIO(content)
+
+        u = U("data.csv", csv)
+        meta = svc.create_from_upload(u)
+
+        schema = svc.infer_schema(meta.dataset_id)
+        assert schema.dataset_id == meta.dataset_id
+        assert schema.row_count == 2
+        assert len(schema.columns) == 2
+        assert schema.columns[0].name == "col1"
