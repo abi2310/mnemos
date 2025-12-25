@@ -1,4 +1,3 @@
-from pathlib import Path
 import io
 
 from app.services.storage import StorageService
