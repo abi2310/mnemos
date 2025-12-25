@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
-from app.models.datasets import DatasetOut
+from app.models.datasets import DatasetOut, DatasetSchema
 from app.services.datasets import DatasetService
 from app.core.dependencies import get_dataset_service
 
@@ -38,3 +38,10 @@ async def list_datasets(ds_svc: DatasetService = Depends(get_dataset_service)):
 async def get_dataset(dataset_id: str, ds_svc: DatasetService = Depends(get_dataset_service)):
     """Return a single dataset by id."""
     return ds_svc.get(dataset_id)
+
+@router.get("/datasets/{dataset_id}/schema", response_model=DatasetSchema)
+async def get_dataset_schema(
+    dataset_id: str,
+    ds_svc: DatasetService = Depends(get_dataset_service),
+):
+    return ds_svc.infer_schema(dataset_id)
