@@ -1,11 +1,14 @@
+from datetime import datetime
 from typing import Dict
 from uuid import uuid4
-from datetime import datetime
-from fastapi import UploadFile, HTTPException
-from .storage import StorageService
-from ..models.datasets import DatasetOut, DatasetStatus
-from ..core.config import get_settings
+
+from fastapi import HTTPException, UploadFile
+
 from pathlib import Path
+
+from ..core.config import get_settings
+from ..models.datasets import DatasetOut, DatasetStatus
+from .storage import StorageService
 
 
 class DatasetService:
@@ -46,6 +49,7 @@ class DatasetService:
         )
 
         self._store[dataset_id] = meta
+
         return meta
 
     def delete(self, dataset_id: str) -> None:
