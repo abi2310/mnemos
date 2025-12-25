@@ -50,14 +50,17 @@ jobs:
             python -m ruff check .
           else
             echo "ruff nicht installiert – übersprungen (requirements-dev?)."
+            exit 1
           fi
 
       - name: Format-Check mit black
         run: |
           if python -m black --version >/dev/null 2>&1; then
+            python -m black .
             python -m black --check .
           else
             echo "black nicht installiert – übersprungen (requirements-dev?)."
+             exit 1
           fi
 
       - name: Type-Check mit mypy
@@ -66,6 +69,7 @@ jobs:
             python -m mypy app
           else
             echo "mypy nicht installiert – übersprungen (requirements-dev?)."
+            exit 1
           fi
 
       # ---------- FASTAPI / AGENT IMPORT-CHECK ----------

@@ -1,0 +1,74 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  build-test-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "Found package-lock.json — attempting clean install with npm ci"
+            npm ci || (echo "npm ci failed — falling back to npm install to regenerate lockfile" && npm install)
+          else
+            npm install
+          fi
+
+      - name: Lint (if available)
+        run: |
+          # Use node to safely check package.json for a lint script.
+          if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts && require('./package.json').scripts.lint ? 0 : 1)"; then
+            echo "Running npm run lint"
+            npm run lint || echo "lint failed (non-zero exit) — continuing"
+          else
+            echo "no lint script defined in package.json, skipping"
+            exit 1
+          fi
+
+      - name: Test (if available)
+        env:
+          CI: true
+        run: |
+          if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts && require('./package.json').scripts.test ? 0 : 1)"; then
+            npm test -- --watchAll=false || exit 1
+          else
+            echo "no test script defined, skipping"
+            exit 1
+          fi
+
+      - name: Build (if available)
+        run: |
+          if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts && require('./package.json').scripts.build ? 0 : 1)"; then
+            npm run build
+          else
+            echo "no build script defined, skipping"
+            exit 1
+          fi

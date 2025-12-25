@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import BinaryIO
-import shutil
 
 
 class StorageService:
