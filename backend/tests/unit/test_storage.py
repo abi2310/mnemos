@@ -1,10 +1,5 @@
-import sys
 from pathlib import Path
 import io
-
-# Ensure backend is importable
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
 
 from app.services.storage import StorageService
 

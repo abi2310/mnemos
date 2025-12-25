@@ -1,12 +1,7 @@
-import sys
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
-# Ensure backend is importable
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
 
 from app.main import app
 from app.services.storage import StorageService
