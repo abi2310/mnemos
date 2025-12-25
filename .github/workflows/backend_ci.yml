@@ -56,6 +56,7 @@ jobs:
       - name: Format-Check mit black
         run: |
           if python -m black --version >/dev/null 2>&1; then
+            python -m black .
             python -m black --check .
           else
             echo "black nicht installiert – übersprungen (requirements-dev?)."
@@ -97,55 +98,3 @@ jobs:
             echo "pytest nicht installiert – bitte in requirements-dev hinzufügen."
             exit 1
           fi
-
-      - name: Black formatting: check and propose
-        # If Black would reformat files, this step will run Black, commit the
-        # formatted files to a new branch and open a draft PR. This makes the
-        # formatting change visible without blocking merges.
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true
-
-      - name: Install Black
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install black
-
-      - name: Run Black and create PR if changes
-        id: black
-        run: |
-          set -e
-          # If Black is not present, the previous step installed it.
-          if python -m black --check .; then
-            echo "black_clean=true" >> $GITHUB_OUTPUT
-            echo "No formatting changes needed"
-            exit 0
-          fi
-
-          # Black would reformat: run it and commit changes to a branch
-          python -m black .
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          branch="auto/format/black-${{ github.sha }}"
-          git checkout -b "$branch"
-          git add -A
-          git commit -m "chore: format with black" || echo "no changes to commit"
-          git push --set-upstream origin "$branch"
-          echo "branch=$branch" >> $GITHUB_OUTPUT
-
-      - name: Create Pull Request for Black formatting
-        if: steps.black.outputs.branch != ''
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: format with black"
-          branch: ${{ steps.black.outputs.branch }}
-          title: "chore: format with black"
-          body: |
-            This PR was created automatically by CI to apply Black formatting.
-            If you agree with the changes, merge this PR and the code will
-            be formatted accordingly.
-          draft: true
