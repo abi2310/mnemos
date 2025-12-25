@@ -38,6 +38,7 @@
     ]
   },
   "devDependencies": {
-    "eslint": "^9.39.2"
+    "eslint": "^9.39.2",
+    "eslint-config-react-app": "^7.0.1"
   }
 }
