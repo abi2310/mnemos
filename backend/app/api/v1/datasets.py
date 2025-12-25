@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, File, UploadFile
 
 from app.models.datasets import DatasetOut
@@ -24,3 +26,15 @@ async def delete_dataset(
     """Delete stored dataset and its metadata."""
     ds_svc.delete(dataset_id)
     return None
+
+
+@router.get("/datasets", response_model=List[DatasetOut])
+async def list_datasets(ds_svc: DatasetService = Depends(get_dataset_service)):
+    """Return all uploaded datasets metadata."""
+    return ds_svc.list_all()
+
+
+@router.get("/datasets/{dataset_id}", response_model=DatasetOut)
+async def get_dataset(dataset_id: str, ds_svc: DatasetService = Depends(get_dataset_service)):
+    """Return a single dataset by id."""
+    return ds_svc.get(dataset_id)

@@ -39,3 +39,19 @@ def test_invalid_extension(tmp_path):
     bad = DummyUpload("evil.exe", b"x")
     with pytest.raises(HTTPException):
         svc.create_from_upload(bad)
+
+
+def test_list_and_get(tmp_path):
+    storage = StorageService(tmp_path)
+    svc = DatasetService(storage)
+
+    u1 = DummyUpload("a.csv", b"x\n")
+    u2 = DummyUpload("b.csv", b"y\n")
+    m1 = svc.create_from_upload(u1)
+    m2 = svc.create_from_upload(u2)
+
+    all_items = svc.list_all()
+    assert len(all_items) == 2
+
+    got = svc.get(m1.dataset_id)
+    assert got.dataset_id == m1.dataset_id

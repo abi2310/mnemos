@@ -56,3 +56,26 @@ def test_invalid_extension_returns_400(client):
     files = {"file": ("data.exe", b"mal", "application/octet-stream")}
     resp = client.post("/api/v1/datasets", files=files)
     assert resp.status_code == 400
+def test_list_and_get_endpoints(client):
+    # upload two datasets
+    resp1 = client.post("/api/v1/datasets", files={"file": ("a.csv", "x\n", "text/csv")})
+    assert resp1.status_code == 201
+    d1 = resp1.json()
+
+    resp2 = client.post("/api/v1/datasets", files={"file": ("b.csv", "y\n", "text/csv")})
+    assert resp2.status_code == 201
+    d2 = resp2.json()
+
+    # list all
+    list_resp = client.get("/api/v1/datasets")
+    assert list_resp.status_code == 200
+    items = list_resp.json()
+    assert isinstance(items, list)
+    assert len(items) >= 2
+
+    # get by id
+    get_resp = client.get(f"/api/v1/datasets/{d1['dataset_id']}")
+    assert get_resp.status_code == 200
+    got = get_resp.json()
+    assert got["dataset_id"] == d1["dataset_id"]
+

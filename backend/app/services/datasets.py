@@ -67,3 +67,7 @@ class DatasetService:
         if not meta:
             raise HTTPException(status_code=404, detail="Dataset not found")
         return meta
+
+    def list_all(self) -> list[DatasetOut]:
+        """Return a list of all stored dataset metadata."""
+        return list(self._store.values())
