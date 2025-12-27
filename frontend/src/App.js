@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import TopBar from './components/TopBar';
-import FileUpload from './components/FileUpload';
+import TopBar from './components/TopBar/TopBar';
+import FileUpload from './components/FileUpload/FileUpload';
 import './App.css';
 
 function App() {
