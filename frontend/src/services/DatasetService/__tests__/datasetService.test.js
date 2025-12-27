@@ -1,3 +1,5 @@
+/* eslint-disable testing-library/no-container */
+/* eslint-disable testing-library/no-node-access */
 import { uploadDataset, deleteDataset } from '../datasetService';
 
 global.fetch = jest.fn();
