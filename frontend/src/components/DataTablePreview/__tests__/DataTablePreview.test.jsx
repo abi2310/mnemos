@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import DataTablePreview from '../DataTablePreview';
 
+
 describe('DataTablePreview – zusätzliche Tests', () => {
     const data = [
         ['id', 'name', 'age'],

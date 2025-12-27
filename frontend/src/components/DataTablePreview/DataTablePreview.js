@@ -7,7 +7,10 @@ function DataTablePreview({ data }) {
     return (
         <div className="data-preview">
             <h4>Data Preview</h4>
-            <div className="data-preview-table-wrapper">
+            <div
+                className="data-preview-table-wrapper"
+                data-testid="data-preview-wrapper"
+            >
                 <table className="data-preview-table">
                     <thead>
                         <tr>
