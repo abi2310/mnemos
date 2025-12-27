@@ -120,14 +120,15 @@ function FileUpload({ onFilesSelected, onUpload }) {
             Supported formats: CSV, Excel (.xlsx, .xls), JSON
           </p>
         </div>
-        
+
         <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".csv,.xlsx,.xls,.json"
-          onChange={handleFileInput}
-          className="file-upload-input"
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".csv,.xlsx,.xls,.json"
+            onChange={handleFileInput}
+            className="file-upload-input"
+            aria-label="File Upload"
         />
       </div>
 
