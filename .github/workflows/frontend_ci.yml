@@ -47,7 +47,7 @@ jobs:
           # Use node to safely check package.json for a lint script.
           if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts && require('./package.json').scripts.lint ? 0 : 1)"; then
             echo "Running npm run lint"
-            npm run lint || echo "lint failed (non-zero exit) — continuing"
+            npm run lint
           else
             echo "no lint script defined in package.json, skipping"
             exit 1

@@ -56,11 +56,11 @@ jobs:
       - name: Format-Check mit black
         run: |
           if python -m black --version >/dev/null 2>&1; then
-            python -m black .
+            # Run black in check mode only so that formatting violations fail the job
             python -m black --check .
           else
-            echo "black nicht installiert – übersprungen (requirements-dev?)."
-             exit 1
+            echo "black nicht installiert – bitte in requirements-dev hinzufügen."
+            exit 1
           fi
 
       - name: Type-Check mit mypy
