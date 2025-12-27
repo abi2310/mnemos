@@ -57,6 +57,7 @@ jobs:
         run: |
           if python -m black --version >/dev/null 2>&1; then
             # Run black in check mode only so that formatting violations fail the job
+            python -m black .
             python -m black --check .
           else
             echo "black nicht installiert – bitte in requirements-dev hinzufügen."
