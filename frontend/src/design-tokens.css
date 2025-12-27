@@ -1,0 +1,135 @@
+/**
+ * Design Tokens / Design System
+ * 
+ * Diese Datei enthält alle zentralen Design-Variablen für die Anwendung.
+ * Die Werte können nach und nach gemeinsam definiert und angepasst werden.
+ * 
+ * Verwendung: Importiere diese Datei in index.css
+ */
+
+:root {
+  /* ============================================
+     FARBEN - Color Palette
+     ============================================ */
+  
+  /* TODO: Primary Colors definieren
+     Diese Farben sollten zum Logo und zur Marke passen */
+  --color-primary: #000000;        /* Platzhalter - bitte anpassen */
+  --color-primary-light: #333333;  /* Platzhalter - bitte anpassen */
+  --color-primary-dark: #000000;   /* Platzhalter - bitte anpassen */
+
+  /* TODO: Secondary Colors definieren */
+  --color-secondary: #666666;      /* Platzhalter - bitte anpassen */
+  --color-secondary-light: #999999; /* Platzhalter - bitte anpassen */
+  --color-secondary-dark: #333333; /* Platzhalter - bitte anpassen */
+
+  /* Accent Colors - Orange für aktive Elemente */
+  --color-accent: #fe4204;         /* Orange für aktive Tabs/Buttons */
+  --color-accent-light: #ff6b35;
+  --color-accent-dark: #d63603;
+
+  /* Semantic Colors - können später angepasst werden */
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+
+  /* Background Colors */
+  --color-bg-primary: #323232;     /* Haupt-Hintergrundfarbe */
+  --color-bg-secondary: #2a2a2a;
+  --color-bg-tertiary: #3a3a3a;
+  --color-bg-dark: #1a1a1a;
+
+  /* Text Colors */
+  --color-text-primary: #ffffff;      /* Haupttextfarbe - weiß */
+  --color-text-secondary: #cccccc;     /* Sekundärtext - hellgrau */
+  --color-text-tertiary: #999999;      /* Tertiärtext - mittelgrau */
+  --color-text-inverse: #000000;       /* Für helle Hintergründe */
+  --color-text-disabled: #666666;
+
+  /* Border Colors */
+  --color-border-light: #4a4a4a;
+  --color-border-medium: #555555;
+  --color-border-dark: #666666;
+
+  /* Link Colors */
+  --color-link: #0066cc;
+  --color-link-hover: #0052a3;
+
+  /* ============================================
+     FONTS - Typography
+     ============================================ */
+
+  /* Font Families */
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  
+  --font-family-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code',
+    'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', 'Courier New', monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+  --font-size-5xl: 3rem;      /* 48px */
+
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+
+  /* ============================================
+     SPACING - Abstände
+     ============================================ */
+  
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;   /* 4px */
+  --spacing-2: 0.5rem;    /* 8px */
+  --spacing-3: 0.75rem;   /* 12px */
+  --spacing-4: 1rem;      /* 16px */
+  --spacing-5: 1.25rem;   /* 20px */
+  --spacing-6: 1.5rem;    /* 24px */
+  --spacing-8: 2rem;      /* 32px */
+  --spacing-10: 2.5rem;   /* 40px */
+  --spacing-12: 3rem;     /* 48px */
+  --spacing-16: 4rem;     /* 64px */
+  --spacing-20: 5rem;     /* 80px */
+
+  /* ============================================
+     BORDER RADIUS
+     ============================================ */
+  
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-base: 0.5rem;  /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-full: 9999px;
+
+  /* ============================================
+     SHADOWS
+     ============================================ */
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* ============================================
+     LOGO
+     ============================================ */
+  
+  --logo-height: 3rem;      /* 48px - anpassbar */
+  --logo-max-width: 200px;  /* anpassbar */
+}
+

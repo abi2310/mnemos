@@ -1,8 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('rendert die Hauptüberschrift der App', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+
+  const heading = screen.getByRole('heading', {
+    name: /upload data/i,
+    level: 1,
+  });
+
+  expect(heading).toBeInTheDocument();
 });
