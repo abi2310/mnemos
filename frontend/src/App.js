@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import TopBar from './components/TopBar/TopBar';
 import FileUpload from './components/FileUpload/FileUpload';
+import { uploadDataset } from './services/DatasetService/datasetService';
 import DataTablePreview from './components/DataTablePreview/DataTablePreview';
 import './App.css';
 
@@ -32,8 +33,18 @@ function App() {
     };
 
     const handleUpload = async (files) => {
-        console.log('Uploading files:', files);
-        // Backend-Upload kommt später
+        if (!files || files.length === 0) return;
+
+        try {
+            const result = await uploadDataset(files[0]);
+            console.log('Upload successful:', result);
+
+            // Optional:
+            // - Dataset-ID speichern
+            // - Success Message anzeigen
+        } catch (error) {
+            console.error('Upload failed:', error);
+        }
     };
 
     return (
