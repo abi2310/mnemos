@@ -9,9 +9,9 @@ describe('DataTablePreview – zusätzliche Tests', () => {
     ];
 
     test('rendert einen Scroll-Wrapper für die Tabelle', () => {
-        const { container } = render(<DataTablePreview data={data} />);
+        render(<DataTablePreview data={data} />);
 
-        const wrapper = container.querySelector('.data-preview-table-wrapper');
+        const wrapper = screen.getByTestId('data-preview-wrapper');
         expect(wrapper).toBeInTheDocument();
     });
 
