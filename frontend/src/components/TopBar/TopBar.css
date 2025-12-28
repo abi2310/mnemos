@@ -17,12 +17,34 @@
   position: relative;
 }
 
+.topbar-menu-button {
+  background: none;
+  border: none;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-base);
+  transition: background-color var(--transition-base);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 0;
+}
+
+.topbar-menu-button:hover {
+  background-color: var(--color-bg-secondary);
+}
+
 .topbar-logo {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
   position: absolute;
-  left: 0;
+  left: 48px;
 }
 
 .topbar-logo-img {
@@ -77,5 +99,36 @@
   right: var(--spacing-4);
   height: 2px;
   background-color: var(--color-accent);
+}
+
+.topbar-add-files {
+  position: absolute;
+  right: 0;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-add-files-button {
+  background-color: var(--color-accent);
+  color: var(--color-text-primary);
+  border: none;
+  border-radius: var(--radius-base);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+
+.topbar-add-files-button:hover {
+  background-color: var(--color-accent-dark);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.topbar-add-files-button:active {
+  transform: translateY(0);
 }
 

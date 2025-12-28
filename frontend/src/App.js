@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import TopBar from './components/TopBar/TopBar';
+import Sidebar from './components/Sidebar/Sidebar';
 import FileUpload from './components/FileUpload/FileUpload';
 import { uploadDataset } from './services/DatasetService/datasetService';
 import DataTablePreview from './components/DataTablePreview/DataTablePreview';
@@ -9,6 +10,9 @@ function App() {
     const [activeTab, setActiveTab] = useState('prepare');
     const [previewData, setPreviewData] = useState([]);
     const [hasUploadedData, setHasUploadedData] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [selectedDatasets, setSelectedDatasets] = useState([]);
+    const [currentDataset, setCurrentDataset] = useState(null);
     const fileInputRef = useRef(null);
 
     const handleFilesSelected = (files) => {
@@ -65,11 +69,43 @@ function App() {
         e.target.value = '';
     };
 
+    const handleDatasetSelect = (dataset, isChecked) => {
+        if (isChecked) {
+            setSelectedDatasets(prev => [...prev, dataset]);
+        } else {
+            setSelectedDatasets(prev => 
+                prev.filter(ds => ds.dataset_id !== dataset.dataset_id)
+            );
+        }
+    };
+
+    const handleDatasetView = (dataset) => {
+        setCurrentDataset(dataset);
+        // Hier könnten wir die Daten des Datasets laden
+        // Für jetzt verwenden wir die bereits geladenen Preview-Daten
+        // TODO: API-Endpunkt zum Laden der Dataset-Daten implementieren
+    };
+
     return (
         <div className="App">
-            <TopBar activeTab={activeTab} onTabChange={setActiveTab} />
+            <Sidebar
+                isOpen={sidebarOpen}
+                onToggle={() => setSidebarOpen(!sidebarOpen)}
+                onDatasetSelect={handleDatasetSelect}
+                onDatasetView={handleDatasetView}
+                selectedDatasets={selectedDatasets}
+            />
+            <TopBar 
+                activeTab={activeTab} 
+                onTabChange={setActiveTab}
+                onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+                showAddFilesButton={activeTab === 'prepare' && hasUploadedData}
+                onAddFilesClick={handleAddMoreFilesClick}
+                fileInputRef={fileInputRef}
+                onAddFilesInput={handleAddMoreFilesInput}
+            />
 
-            <main className="App-main">
+            <main className={`App-main ${sidebarOpen ? 'sidebar-open' : ''}`}>
                 {activeTab === 'prepare' && (
                     <div className="App-content">
                         {!hasUploadedData ? (
@@ -84,28 +120,7 @@ function App() {
                                 />
                             </>
                         ) : (
-                            <>
-                                <div className="App-header-with-add-button">
-                                    <button
-                                        className="App-add-files-button"
-                                        onClick={handleAddMoreFilesClick}
-                                        type="button"
-                                        aria-label="Add more files"
-                                    >
-                                        + Add Files
-                                    </button>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        multiple
-                                        accept=".csv,.xlsx,.xls,.json"
-                                        onChange={handleAddMoreFilesInput}
-                                        className="file-upload-input"
-                                        aria-label="File Upload"
-                                    />
-                                </div>
-                                <DataTablePreview data={previewData} />
-                            </>
+                            <DataTablePreview data={previewData} />
                         )}
                     </div>
                 )}

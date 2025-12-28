@@ -1,10 +1,17 @@
 import React from 'react';
 import './TopBar.css';
 
-function TopBar({ activeTab, onTabChange }) {
+function TopBar({ activeTab, onTabChange, onSidebarToggle, showAddFilesButton, onAddFilesClick, fileInputRef, onAddFilesInput }) {
   return (
     <header className="topbar">
       <div className="topbar-content">
+        <button
+          className="topbar-menu-button"
+          onClick={onSidebarToggle}
+          aria-label="Toggle sidebar"
+        >
+          ☰
+        </button>
         <div className="topbar-logo">
           <img 
             src="/mnemoslogo.png" 
@@ -36,6 +43,28 @@ function TopBar({ activeTab, onTabChange }) {
             Predict
           </button>
         </nav>
+
+        {showAddFilesButton && (
+          <div className="topbar-add-files">
+            <button
+              className="topbar-add-files-button"
+              onClick={onAddFilesClick}
+              type="button"
+              aria-label="Add more files"
+            >
+              + Add Files
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".csv,.xlsx,.xls,.json"
+              onChange={onAddFilesInput}
+              className="file-upload-input"
+              aria-label="File Upload"
+            />
+          </div>
+        )}
       </div>
     </header>
   );
