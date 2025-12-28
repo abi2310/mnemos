@@ -28,3 +28,36 @@
   color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-8) 0;
 }
+
+.App-header-with-add-button {
+  position: relative;
+  margin-bottom: var(--spacing-8);
+}
+
+.App-add-files-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: var(--color-accent);
+  color: var(--color-text-primary);
+  border: none;
+  border-radius: var(--radius-base);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.App-add-files-button:hover {
+  background-color: var(--color-accent-dark);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.App-add-files-button:active {
+  transform: translateY(0);
+}
