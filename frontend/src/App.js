@@ -3,6 +3,7 @@ import TopBar from './components/TopBar/TopBar';
 import FileUpload from './components/FileUpload/FileUpload';
 import { uploadDataset } from './services/DatasetService/datasetService';
 import DataTablePreview from './components/DataTablePreview/DataTablePreview';
+import Explore from './components/Explore/Explore';
 import './App.css';
 
 function App() {
@@ -69,10 +70,7 @@ function App() {
                 )}
 
                 {activeTab === 'explore' && (
-                    <div className="App-content">
-                        <h1 className="App-title">Explore</h1>
-                        <p className="App-subtitle">Explore and visualize your data</p>
-                    </div>
+                    <Explore />
                 )}
 
                 {activeTab === 'predict' && (
