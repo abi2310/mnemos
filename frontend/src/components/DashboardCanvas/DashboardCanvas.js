@@ -8,7 +8,7 @@ import './DashboardCanvas.css';
  * Hier werden Visualisierungen, Diagramme und Kennzahlen angezeigt.
  */
 function DashboardCanvas() {
-    const [widgets, setWidgets] = useState([]);
+    const [widgets, _setWidgets] = useState([]);
 
     // TODO: Widgets werden später vom Backend/Chat dynamisch hinzugefügt
     // Beispiel-Widget-Struktur:
