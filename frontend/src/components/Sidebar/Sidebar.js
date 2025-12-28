@@ -86,19 +86,31 @@ function Sidebar({ isOpen, onToggle, onDatasetSelect, onDatasetView, selectedDat
                                 className={`sidebar-nav-item ${activeSection === 'myData' ? 'active' : ''}`}
                                 onClick={() => setActiveSection('myData')}
                             >
-                                📊 My Data
+                                <svg className="sidebar-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M4 7h16M4 12h16M4 17h16" />
+                                </svg>
+                                My Data
                             </button>
                             <button
                                 className={`sidebar-nav-item ${activeSection === 'dashboards' ? 'active' : ''}`}
                                 onClick={() => setActiveSection('dashboards')}
                             >
-                                📈 Dashboards
+                                <svg className="sidebar-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" />
+                                    <rect x="14" y="3" width="7" height="7" />
+                                    <rect x="3" y="14" width="7" height="7" />
+                                    <rect x="14" y="14" width="7" height="7" />
+                                </svg>
+                                Dashboards
                             </button>
                             <button
                                 className={`sidebar-nav-item ${activeSection === 'chats' ? 'active' : ''}`}
                                 onClick={() => setActiveSection('chats')}
                             >
-                                💬 Chats
+                                <svg className="sidebar-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                </svg>
+                                Chats
                             </button>
                         </nav>
 
@@ -115,6 +127,12 @@ function Sidebar({ isOpen, onToggle, onDatasetSelect, onDatasetView, selectedDat
                                             {datasets.map((dataset) => (
                                                 <li key={dataset.dataset_id} className="dataset-item">
                                                     <div className="dataset-header">
+                                                        <button
+                                                            className="dataset-name-button"
+                                                            onClick={() => handleDatasetClick(dataset)}
+                                                        >
+                                                            {dataset.original_name}
+                                                        </button>
                                                         <input
                                                             type="checkbox"
                                                             checked={selectedDatasets?.some(
@@ -126,12 +144,6 @@ function Sidebar({ isOpen, onToggle, onDatasetSelect, onDatasetView, selectedDat
                                                             onClick={(e) => e.stopPropagation()}
                                                             className="dataset-checkbox"
                                                         />
-                                                        <button
-                                                            className="dataset-name-button"
-                                                            onClick={() => handleDatasetClick(dataset)}
-                                                        >
-                                                            {dataset.original_name}
-                                                        </button>
                                                     </div>
                                                     {expandedDatasets[dataset.dataset_id] && (
                                                         <div className="dataset-details">

@@ -48,13 +48,13 @@
 }
 
 .topbar-logo-img {
-  height: var(--logo-height);
-  max-width: var(--logo-max-width);
+  height: 28px;
+  max-width: 28px;
   width: auto;
 }
 
 .topbar-logo-text {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   letter-spacing: var(--letter-spacing-tight);
@@ -80,6 +80,14 @@
   cursor: pointer;
   transition: color var(--transition-base);
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.topbar-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
 }
 
 .topbar-nav-item:hover {
