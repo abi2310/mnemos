@@ -1,4 +1,4 @@
-/* Prepare - Julius AI Style Layout */
+/* Prepare - Upload + Übersicht Layout */
 
 .prepare-container {
     width: 100%;
@@ -12,13 +12,15 @@
 .prepare-content {
     flex: 1;
     padding: var(--spacing-6);
-    max-width: 1200px;
+    max-width: 100%;
     width: 100%;
     margin: 0 auto;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: var(--spacing-6);
+    box-sizing: border-box;
 }
 
 /* Responsive Design */
@@ -26,6 +28,12 @@
     .prepare-content {
         padding: var(--spacing-4);
         gap: var(--spacing-4);
+    }
+}
+
+@media (min-width: 1400px) {
+    .prepare-content {
+        max-width: 1400px;
     }
 }
 

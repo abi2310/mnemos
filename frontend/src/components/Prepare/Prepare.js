@@ -5,11 +5,8 @@ import { uploadDataset, getDatasets, deleteDataset } from '../../services/Datase
 import './Prepare.css';
 
 /**
- * Prepare Component - Julius AI Style Layout
- * 
- * Aufbau:
- * 1. Oben: Upload-Bereich (Dropzone + Upload-Button)
- * 2. Unten: Files-Übersicht (Tabelle mit Search, Bulk Actions, Row Actions)
+ * Prepare Component - Global Datasets View
+ * Upload-Bereich + Datenübersicht
  */
 function Prepare() {
     const [datasets, setDatasets] = useState([]);
@@ -84,7 +81,7 @@ function Prepare() {
                 {/* Upload Section - Oben */}
                 <UploadSection onUpload={handleUpload} />
 
-                {/* Files Section - Unten */}
+                {/* Files Section - Unten (enthält FilePreviewPanel intern) */}
                 <FilesSection
                     datasets={datasets}
                     isLoading={isLoading}

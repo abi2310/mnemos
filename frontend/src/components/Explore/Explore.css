@@ -1,4 +1,4 @@
-/* Explore - Split-View Layout für Chat und Dashboard */
+/* Explore - Split Layout mit Chat + Dashboard */
 
 .explore-container {
     width: 100%;
@@ -8,83 +8,19 @@
     overflow: hidden;
 }
 
-.explore-split-view {
-    display: flex;
-    width: 100%;
+/* Chat Panel links */
+.explore-chat-panel {
+    width: 320px;
+    min-width: 320px;
     height: 100%;
-    flex: 1;
+    background-color: var(--color-bg-secondary);
+    border-right: 1px solid var(--color-border-light);
+    overflow-y: auto;
 }
 
-/* Panels */
-.explore-panel {
+/* Dashboard rechts */
+.explore-dashboard {
+    flex: 1;
     height: 100%;
     overflow: hidden;
-}
-
-/* Left Panel - Sidebar oder Chat */
-.explore-panel--left {
-    flex-shrink: 0;
-    position: relative;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Resize Handle */
-.resize-handle {
-    width: 4px;
-    background-color: transparent;
-    cursor: col-resize;
-    position: relative;
-    flex-shrink: 0;
-    transition: background-color 0.15s ease;
-}
-
-.resize-handle:hover {
-    background-color: rgba(254, 66, 4, 0.3);
-}
-
-.resize-handle.resizing {
-    background-color: rgba(254, 66, 4, 0.5);
-}
-
-.resize-handle::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -2px;
-    right: -2px;
-}
-
-/* Dashboard Panel - Rechte Seite */
-.explore-panel--dashboard {
-    flex: 1;
-    min-width: 0; /* Wichtig für Flexbox overflow */
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-    .explore-split-view {
-        flex-direction: column;
-    }
-
-    .explore-panel--chat {
-        width: 100%;
-        max-width: none;
-        height: 50%;
-        min-height: 300px;
-    }
-
-    .explore-panel--dashboard {
-        height: 50%;
-    }
-}
-
-@media (max-width: 768px) {
-    .explore-panel--chat {
-        height: 60%;
-    }
-
-    .explore-panel--dashboard {
-        height: 40%;
-    }
 }

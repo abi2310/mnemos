@@ -1,106 +1,62 @@
-import React, { useState, useRef, useEffect } from 'react';
-import ChatPanel from '../ChatPanel/ChatPanel';
+import React, { useState } from 'react';
 import DashboardCanvas from '../DashboardCanvas/DashboardCanvas';
+import ChatSidebar from '../ChatSidebar/ChatSidebar';
 import ChatConversation from '../ChatConversation/ChatConversation';
 import './Explore.css';
 
 /**
- * Explore Component
+ * Explore Component (Refactored)
  *
- * Hauptkomponente für den Explore-Tab.
- * Links: ChatPanel (Sidebar) oder ChatConversation (Chat)
- * Rechts: DashboardCanvas (immer sichtbar)
+ * Wenn Projekt ausgewählt:
+ * - Links: Chat-Interface (ChatSidebar oder ChatConversation)
+ * - Rechts: DashboardCanvas
  */
 function Explore() {
-    const [leftView, setLeftView] = useState('sidebar'); // 'sidebar' oder 'conversation'
+    const [chats, setChats] = useState([]);
     const [activeChat, setActiveChat] = useState(null);
-    const [leftWidth, setLeftWidth] = useState(320);
-    const [isResizing, setIsResizing] = useState(false);
-    const leftPanelRef = useRef(null);
 
-    const handleNewChat = (chatId) => {
-        setActiveChat(chatId);
-        setLeftView('conversation');
-        // Vergrößere den Chat smooth auf 480px
-        setLeftWidth(480);
+    const handleNewChat = () => {
+        const newChat = {
+            id: Date.now(),
+            title: `Chat ${chats.length + 1}`,
+            createdAt: new Date(),
+            messages: []
+        };
+
+        setChats([newChat, ...chats]);
+        setActiveChat(newChat.id);
     };
 
     const handleChatSelect = (chatId) => {
         setActiveChat(chatId);
-        setLeftView('conversation');
-        // Vergrößere den Chat smooth auf 480px
-        setLeftWidth(480);
     };
 
     const handleBackToSidebar = () => {
-        setLeftView('sidebar');
         setActiveChat(null);
-        // Verkleinere zurück auf 320px
-        setLeftWidth(320);
     };
-
-    const handleMouseDown = (e) => {
-        setIsResizing(true);
-        e.preventDefault();
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e) => {
-            if (!isResizing) return;
-
-            const newWidth = e.clientX;
-            if (newWidth >= 280 && newWidth <= 800) {
-                setLeftWidth(newWidth);
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsResizing(false);
-        };
-
-        if (isResizing) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isResizing]);
 
     return (
         <div className="explore-container">
-            <div className="explore-split-view">
-                {/* Linke Spalte: Sidebar oder Chat-Konversation */}
-                <div
-                    className="explore-panel explore-panel--left"
-                    ref={leftPanelRef}
-                    style={{ width: `${leftWidth}px` }}
-                >
-                    {leftView === 'sidebar' ? (
-                        <ChatPanel
-                            onNewChat={handleNewChat}
-                            onChatSelect={handleChatSelect}
-                        />
-                    ) : (
-                        <ChatConversation
-                            chatId={activeChat}
-                            onBack={handleBackToSidebar}
-                        />
-                    )}
-                </div>
+            {/* Chat-Interface links */}
+            <div className="explore-chat-panel">
+                {activeChat ? (
+                    <ChatConversation
+                        chatId={activeChat}
+                        onBack={handleBackToSidebar}
+                    />
+                ) : (
+                    <ChatSidebar
+                        chats={chats}
+                        activeChat={activeChat}
+                        onNewChat={handleNewChat}
+                        onChatSelect={handleChatSelect}
+                    />
+                )}
+            </div>
 
-                {/* Resize Handle */}
-                <div
-                    className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                    onMouseDown={handleMouseDown}
-                />
-
-                {/* Rechte Spalte: Dashboard (immer sichtbar) */}
-                <div className="explore-panel explore-panel--dashboard">
-                    <DashboardCanvas />
-                </div>
+            {/* Dashboard rechts */}
+            <div className="explore-dashboard">
+                <DashboardCanvas />
             </div>
         </div>
     );

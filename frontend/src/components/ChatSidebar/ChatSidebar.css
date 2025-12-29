@@ -1,0 +1,182 @@
+/**
+ * ChatSidebar Styles
+ * Nur Chat-Funktionalität ohne Navigation
+ */
+
+.chat-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--color-bg-secondary);
+}
+
+/* Header */
+.chat-sidebar-header {
+    padding: var(--spacing-6) var(--spacing-4);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.chat-sidebar-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+/* Actions */
+.chat-sidebar-actions {
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.chat-sidebar-new-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-4);
+    background-color: var(--color-accent);
+    border: none;
+    border-radius: var(--radius-base);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    font-family: var(--font-family-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.chat-sidebar-new-btn:hover {
+    background-color: var(--color-accent-light);
+}
+
+.chat-sidebar-new-btn:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.chat-sidebar-new-btn svg {
+    flex-shrink: 0;
+}
+
+/* Chat List */
+.chat-sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-2);
+}
+
+.chat-sidebar-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-16) var(--spacing-4);
+    text-align: center;
+}
+
+.chat-sidebar-empty p {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+    margin: 0 0 var(--spacing-2) 0;
+}
+
+.chat-sidebar-empty-hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-disabled);
+}
+
+/* Chat Items */
+.chat-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-3);
+    background: none;
+    border: none;
+    border-radius: var(--radius-base);
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: left;
+    position: relative;
+    margin-bottom: var(--spacing-1);
+}
+
+.chat-sidebar-item:hover {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+}
+
+.chat-sidebar-item:hover .chat-sidebar-item-delete {
+    opacity: 1;
+}
+
+.chat-sidebar-item:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.chat-sidebar-item.active {
+    background-color: rgba(254, 66, 4, 0.1);
+    color: var(--color-accent);
+}
+
+.chat-sidebar-item svg {
+    flex-shrink: 0;
+}
+
+.chat-sidebar-item-title {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-sidebar-item-delete {
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    flex-shrink: 0;
+}
+
+.chat-sidebar-item-delete:hover {
+    background-color: var(--color-error);
+    color: var(--color-text-primary);
+}
+
+.chat-sidebar-item.active .chat-sidebar-item-delete {
+    opacity: 1;
+}
+
+/* Scrollbar */
+.chat-sidebar-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-sidebar-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-sidebar-list::-webkit-scrollbar-thumb {
+    background: var(--color-border-medium);
+    border-radius: var(--radius-base);
+}
+
+.chat-sidebar-list::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-dark);
+}
+

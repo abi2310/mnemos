@@ -2,9 +2,7 @@
   background-color: var(--color-bg-dark);
   border-bottom: 1px solid var(--color-border-medium);
   padding: 0;
-  position: sticky;
-  top: 0;
-  z-index: var(--z-index-sticky);
+  z-index: 100;
 }
 
 .topbar-content {
@@ -12,62 +10,132 @@
   margin: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
   height: 64px;
-  position: relative;
+  padding: 0 var(--spacing-6);
+  gap: var(--spacing-8);
 }
 
-.topbar-logo {
+/* TopBar ohne Projekt - minimal */
+.topbar--no-project .topbar-content {
+  justify-content: flex-end;
+}
+
+.topbar-placeholder {
+  /* Platzhalter für zukünftige globale Actions */
+}
+
+/* TopBar mit Projekt - zeigt Tabs mittig */
+.topbar--with-project .topbar-content {
+    justify-content: center;
+    position: relative;
+}
+
+/* Zurück-Button (links) */
+.topbar-back-button {
+    position: absolute;
+    left: var(--spacing-4);
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-base);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-family-primary);
+}
+
+.topbar-back-button:hover {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.topbar-back-button:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Projekt Info (links, neben Zurück-Button) */
+.topbar-project-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    position: absolute;
+    left: calc(var(--spacing-4) + 36px + var(--spacing-4));
+}
+
+.topbar-project-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+}
+
+.topbar-project-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.topbar-project-details {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-  position: absolute;
-  left: 0;
-  padding-left: var(--spacing-4);
+  flex-direction: column;
+  gap: var(--spacing-1);
 }
 
-.topbar-logo-img {
-  height: var(--logo-height);
-  max-width: var(--logo-max-width);
-  width: auto;
+.topbar-project-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.topbar-logo-text {
-  font-size: var(--font-size-xl);
+.topbar-project-name {
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  letter-spacing: var(--letter-spacing-tight);
 }
 
-.topbar-logo-text-accent {
-  color: var(--color-accent);
-}
-
+/* Navigation Tabs (mittig) */
 .topbar-nav {
-  display: flex;
-  gap: var(--spacing-2);
-  align-items: center;
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    justify-content: center;
 }
 
 .topbar-nav-item {
   background: none;
   border: none;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
-  padding: var(--spacing-2) var(--spacing-4);
+  font-family: var(--font-family-primary);
+  padding: var(--spacing-3) var(--spacing-5);
   cursor: pointer;
-  transition: color var(--transition-base);
+  transition: all var(--transition-base);
   position: relative;
+  border-radius: var(--radius-base);
 }
 
-.topbar-nav-item:hover {
+.topbar-nav-item:hover:not(:disabled) {
   color: var(--color-text-primary);
-  opacity: 0.8;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.topbar-nav-item:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .topbar-nav-item.active {
   color: var(--color-accent);
+  background-color: rgba(254, 66, 4, 0.1);
 }
 
 .topbar-nav-item.active::after {
@@ -78,5 +146,15 @@
   right: var(--spacing-4);
   height: 2px;
   background-color: var(--color-accent);
+}
+
+.topbar-nav-item:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.topbar-nav-item:disabled:hover {
+  background: none;
 }
 
