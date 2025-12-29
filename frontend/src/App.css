@@ -1,13 +1,22 @@
 .App {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg-primary);
+  overflow: hidden;
 }
 
 .App-main {
   flex: 1;
   padding: var(--spacing-8) var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Explore-Tab ohne Padding für fullscreen Layout */
+.App-main:has(.explore-container) {
+  padding: 0;
 }
 
 .App-content {
