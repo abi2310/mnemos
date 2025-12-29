@@ -168,10 +168,13 @@
 }
 
 .files-table-cell--name {
+    font-weight: var(--font-weight-medium);
+}
+
+.files-table-cell--name > div {
     display: flex;
     align-items: center;
     gap: var(--spacing-3);
-    font-weight: var(--font-weight-medium);
 }
 
 .files-table-file-icon {
@@ -271,6 +274,20 @@
 
 .files-empty-button:hover {
     background-color: var(--color-accent-dark);
+}
+
+/* Preview Row */
+.files-table-row--preview {
+    background-color: var(--color-bg-primary);
+}
+
+.files-table-row--preview:hover {
+    background-color: var(--color-bg-primary);
+}
+
+.files-table-cell--preview {
+    padding: 0 !important;
+    border-bottom: 1px solid var(--color-border-medium);
 }
 
 /* Checkbox Styling */

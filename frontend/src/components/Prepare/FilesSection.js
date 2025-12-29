@@ -257,10 +257,10 @@ function FilesSection({
                             </thead>
                             <tbody>
                                 {filteredDatasets.map((dataset) => (
-                                    <tr 
-                                        key={dataset.id}
-                                        className={`files-table-row ${selectedIds.includes(dataset.id) ? 'selected' : ''}`}
-                                    >
+                                    <React.Fragment key={dataset.id}>
+                                        <tr 
+                                            className={`files-table-row ${selectedIds.includes(dataset.id) ? 'selected' : ''}`}
+                                        >
                                         <td className="files-table-cell files-table-cell--checkbox">
                                             <input
                                                 type="checkbox"
@@ -270,22 +270,24 @@ function FilesSection({
                                             />
                                         </td>
                                         <td className="files-table-cell files-table-cell--name">
-                                            <svg 
-                                                className="files-table-file-icon" 
-                                                width="20" 
-                                                height="20" 
-                                                viewBox="0 0 24 24" 
-                                                fill="none"
-                                            >
-                                                <path 
-                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-                                                    stroke="currentColor" 
-                                                    strokeWidth="2" 
-                                                    strokeLinecap="round" 
-                                                    strokeLinejoin="round"
-                                                />
-                                            </svg>
-                                            <span>{dataset.filename || 'Unnamed file'}</span>
+                                            <div>
+                                                <svg 
+                                                    className="files-table-file-icon" 
+                                                    width="20" 
+                                                    height="20" 
+                                                    viewBox="0 0 24 24" 
+                                                    fill="none"
+                                                >
+                                                    <path 
+                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                                                        stroke="currentColor" 
+                                                        strokeWidth="2" 
+                                                        strokeLinecap="round" 
+                                                        strokeLinejoin="round"
+                                                    />
+                                                </svg>
+                                                <span>{dataset.filename || 'Unnamed file'}</span>
+                                            </div>
                                         </td>
                                         <td className="files-table-cell">
                                             {formatFileSize(dataset.file_size)}
@@ -356,20 +358,25 @@ function FilesSection({
                                             </div>
                                         </td>
                                     </tr>
+                                    
+                                    {/* Preview Row - direkt unter der ausgewählten Zeile */}
+                                    {selectedPreviewFile && selectedPreviewFile.id === dataset.id && (
+                                        <tr className="files-table-row--preview">
+                                            <td className="files-table-cell--preview" colSpan="5">
+                                                <FilePreviewPanel
+                                                    file={selectedPreviewFile}
+                                                    onClose={onClosePreview}
+                                                />
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
                                 ))}
                             </tbody>
                         </table>
                     </div>
                 )}
             </div>
-
-            {/* Preview Panel - Unterhalb der Tabelle */}
-            {selectedPreviewFile && (
-                <FilePreviewPanel
-                    file={selectedPreviewFile}
-                    onClose={onClosePreview}
-                />
-            )}
         </section>
     );
 }
