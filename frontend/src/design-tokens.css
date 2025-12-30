@@ -126,10 +126,18 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
   /* ============================================
+     TRANSITIONS
+     ============================================ */
+  
+  --transition-base: 0.2s ease;
+  --transition-fast: 0.15s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ============================================
      LOGO
      ============================================ */
   
-  --logo-height: 3rem;      /* 48px - anpassbar */
+  --logo-height: 2.5rem;    /* 40px - anpassbar */
   --logo-max-width: 200px;  /* anpassbar */
 }
 
