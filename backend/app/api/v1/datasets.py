@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile, Form
 
 from app.models.datasets import DatasetOut, DatasetSchema
 from app.services.datasets import DatasetService
@@ -38,6 +38,18 @@ async def list_datasets(ds_svc: DatasetService = Depends(get_dataset_service)):
 async def get_dataset(dataset_id: str, ds_svc: DatasetService = Depends(get_dataset_service)):
     """Return a single dataset by id."""
     return ds_svc.get(dataset_id)
+
+
+@router.put("/datasets/{dataset_id}", response_model=DatasetOut)
+async def update_dataset(
+    dataset_id: str,
+    file: UploadFile | None = None,
+    original_name: str | None = Form(None),
+    ds_svc: DatasetService = Depends(get_dataset_service),
+):
+    """Update dataset metadata and/or file content."""
+    return ds_svc.update(dataset_id, file=file, original_name=original_name)
+
 
 @router.get("/datasets/{dataset_id}/schema", response_model=DatasetSchema)
 async def get_dataset_schema(

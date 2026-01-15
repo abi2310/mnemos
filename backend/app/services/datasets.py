@@ -75,6 +75,27 @@ class DatasetService:
         """Return a list of all stored dataset metadata."""
         return list(self._store.values())
     
+    def update(self, dataset_id: str, file: UploadFile | None = None, original_name: str | None = None) -> DatasetOut:
+        """Update dataset metadata and/or file content. Raises HTTPException if not found."""
+        meta = self._store.get(dataset_id)
+        if not meta:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        
+        # Update file if provided
+        if file:
+            self._validate_extension(file.filename or "")
+            # Delete old file
+            self._storage.delete(meta.storage_key)
+            # Save new file with same path
+            size = self._storage.save(meta.storage_key, file.file)
+            meta.size_bytes = size
+        
+        # Update name if provided
+        if original_name is not None:
+            meta.original_name = original_name
+        
+        return meta
+    
     def _load_dataframe(self, meta: DatasetOut) -> pd.DataFrame:
         ext = Path(meta.storage_key).suffix.lower()
         f = self._storage.open(meta.storage_key)
