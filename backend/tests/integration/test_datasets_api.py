@@ -91,3 +91,68 @@ def test_schema_endpoint(client):
     assert body["row_count"] == 2
     assert len(body["columns"]) == 2
 
+
+def test_update_dataset_name(client):
+    # upload
+    resp = client.post("/api/v1/datasets", files={"file": ("old_name.csv", "a,b\n1,2\n", "text/csv")})
+    assert resp.status_code == 201
+    d = resp.json()
+    dataset_id = d["dataset_id"]
+    assert d["original_name"] == "old_name.csv"
+
+    # update name only
+    update_resp = client.put(f"/api/v1/datasets/{dataset_id}", data={"original_name": "new_name.csv"})
+    assert update_resp.status_code == 200
+    updated = update_resp.json()
+    assert updated["original_name"] == "new_name.csv"
+    assert updated["dataset_id"] == dataset_id
+
+
+def test_update_dataset_file(client, tmp_path):
+    # upload initial file
+    resp = client.post("/api/v1/datasets", files={"file": ("data.csv", "a,b\n1,2\n", "text/csv")})
+    assert resp.status_code == 201
+    d = resp.json()
+    dataset_id = d["dataset_id"]
+    initial_size = d["size_bytes"]
+    storage_key = d["storage_key"]
+
+    # update with new file
+    new_data = "x,y,z\n10,20,30\n40,50,60\n"
+    update_resp = client.put(f"/api/v1/datasets/{dataset_id}", files={"file": ("new_data.csv", new_data, "text/csv")})
+    assert update_resp.status_code == 200
+    updated = update_resp.json()
+    assert updated["size_bytes"] == len(new_data.encode())
+    assert updated["size_bytes"] != initial_size
+
+    # file should be updated on disk
+    path = tmp_path / storage_key
+    assert path.exists()
+    assert path.read_text() == new_data
+
+
+def test_update_dataset_file_and_name(client):
+    # upload
+    resp = client.post("/api/v1/datasets", files={"file": ("old.csv", "a\n1\n", "text/csv")})
+    assert resp.status_code == 201
+    d = resp.json()
+    dataset_id = d["dataset_id"]
+
+    # update both file and name
+    new_data = "b,c\n2,3\n"
+    update_resp = client.put(
+        f"/api/v1/datasets/{dataset_id}",
+        files={"file": ("new.csv", new_data, "text/csv")},
+        data={"original_name": "updated_name.csv"},
+    )
+    assert update_resp.status_code == 200
+    updated = update_resp.json()
+    assert updated["original_name"] == "updated_name.csv"
+    assert updated["size_bytes"] == len(new_data.encode())
+
+
+def test_update_nonexistent_dataset(client):
+    # try to update non-existent dataset
+    resp = client.put("/api/v1/datasets/nonexistent-id", data={"original_name": "new.csv"})
+    assert resp.status_code == 404
+
