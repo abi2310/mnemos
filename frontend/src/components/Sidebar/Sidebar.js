@@ -15,7 +15,9 @@ function Sidebar({ isOpen, onToggle }) {
       </button>
 
       <nav className="sidebar-nav">
-        {/* Platzhalter für zukünftige Navigation */}
+        <span className="sidebar-nav-item">Home</span>
+        <span className="sidebar-nav-item">Projects</span>
+        <span className="sidebar-nav-item">Datasets</span>
       </nav>
     </aside>
   );
