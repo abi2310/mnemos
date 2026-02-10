@@ -6,12 +6,19 @@
   overflow: hidden;
 }
 
+.App-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
 .App-main {
   flex: 1;
   padding: var(--spacing-8) var(--spacing-6);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 /* Explore-Tab ohne Padding für fullscreen Layout */
