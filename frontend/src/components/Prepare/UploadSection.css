@@ -16,6 +16,12 @@
     justify-content: center;
 }
 
+/* Kompaktere Dropzone im Modal */
+.modal-body .upload-dropzone {
+    min-height: 120px;
+    padding: var(--spacing-6);
+}
+
 .upload-dropzone:hover:not(.uploading) {
     border-color: var(--color-accent);
     background-color: var(--color-bg-tertiary);

@@ -53,6 +53,16 @@ function App() {
                             <button className="modal-close" onClick={() => setShowNewProject(false)}>✕</button>
                         </div>
                         <div className="modal-body">
+                            <label className="modal-label">Project Name</label>
+                            <input
+                                type="text"
+                                className="modal-input"
+                                placeholder="Enter project name..."
+                            />
+
+                            <Prepare />
+
+                            <button className="App-btn-primary modal-create-btn">Create Project</button>
                         </div>
                     </div>
                 </div>

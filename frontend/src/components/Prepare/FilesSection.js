@@ -142,58 +142,7 @@ function FilesSection({
                     />
                 </div>
 
-                {/* Bulk Actions */}
-                <div className="files-bulk-actions">
-                    <button
-                        className="files-action-button"
-                        disabled={selectedIds.length === 0}
-                        title="Download selected files"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path 
-                                d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5 5m0 0l-5-5m5 5V3" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                        Download ({selectedIds.length})
-                    </button>
-                    <button
-                        className="files-action-button files-action-button--danger"
-                        disabled={selectedIds.length === 0}
-                        onClick={handleBulkDelete}
-                        title="Delete selected files"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path 
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                        Delete ({selectedIds.length})
-                    </button>
-                    <button
-                        className="files-action-button"
-                        disabled={selectedIds.length === 0}
-                        title="Chat with selected files"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path 
-                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                        Chat with files ({selectedIds.length})
-                    </button>
-                </div>
+                {/* Bulk Actions - reserviert für zukünftige Nutzung */}
             </div>
 
             {/* Table */}
@@ -252,7 +201,6 @@ function FilesSection({
                                     <th className="files-table-header">Name</th>
                                     <th className="files-table-header">Size</th>
                                     <th className="files-table-header">Upload Date</th>
-                                    <th className="files-table-header files-table-header--actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -295,74 +243,12 @@ function FilesSection({
                                         <td className="files-table-cell">
                                             {formatDate(dataset.created_at)}
                                         </td>
-                                        <td className="files-table-cell files-table-cell--actions">
-                                            <div className="files-row-actions">
-                                                <button
-                                                    className="files-row-action-button"
-                                                    onClick={() => onOpenPreview(dataset)}
-                                                    title="Open preview"
-                                                    aria-label="Open preview"
-                                                >
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                                        <path 
-                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2" 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round"
-                                                        />
-                                                        <path 
-                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2" 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    Open
-                                                </button>
-                                                <button
-                                                    className="files-row-action-button"
-                                                    disabled
-                                                    title="Download file"
-                                                    aria-label="Download file"
-                                                >
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                                        <path 
-                                                            d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5 5m0 0l-5-5m5 5V3" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2" 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    Download
-                                                </button>
-                                                <button
-                                                    className="files-row-action-button files-row-action-button--danger"
-                                                    onClick={() => handleSingleDelete(dataset.id)}
-                                                    title="Delete file"
-                                                    aria-label="Delete file"
-                                                >
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                                        <path 
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2" 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </td>
                                     </tr>
                                     
                                     {/* Preview Row - direkt unter der ausgewählten Zeile */}
                                     {selectedPreviewFile && selectedPreviewFile.id === dataset.id && (
                                         <tr className="files-table-row--preview">
-                                            <td className="files-table-cell--preview" colSpan="5">
+                                            <td className="files-table-cell--preview" colSpan="4">
                                                 <FilePreviewPanel
                                                     file={selectedPreviewFile}
                                                     onClose={onClosePreview}
