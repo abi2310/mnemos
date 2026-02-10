@@ -9,6 +9,7 @@ function App() {
     const [activeTab, setActiveTab] = useState('prepare');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activePage, setActivePage] = useState('home');
+    const [showNewProject, setShowNewProject] = useState(false);
 
     return (
         <div className="App">
@@ -32,7 +33,7 @@ function App() {
                     {activePage === 'projects' && (
                         <div className="App-page-header">
                             <h1 className="App-title">Projects</h1>
-                            <button className="App-btn-primary">+ New Project</button>
+                            <button className="App-btn-primary" onClick={() => setShowNewProject(true)}>+ New Project</button>
                         </div>
                     )}
 
@@ -43,6 +44,19 @@ function App() {
                     )}
                 </main>
             </div>
+
+            {showNewProject && (
+                <div className="modal-overlay" onClick={() => setShowNewProject(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">New Project</h2>
+                            <button className="modal-close" onClick={() => setShowNewProject(false)}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
