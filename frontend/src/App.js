@@ -8,6 +8,7 @@ import './App.css';
 function App() {
     const [activeTab, setActiveTab] = useState('prepare');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activePage, setActivePage] = useState('home');
 
     return (
         <div className="App">
@@ -17,21 +18,27 @@ function App() {
                 <Sidebar
                     isOpen={sidebarOpen}
                     onToggle={() => setSidebarOpen(prev => !prev)}
+                    activePage={activePage}
+                    onPageChange={setActivePage}
                 />
 
                 <main className="App-main">
-                    {activeTab === 'prepare' && (
-                        <Prepare />
-                    )}
-
-                    {activeTab === 'explore' && (
-                        <Explore />
-                    )}
-
-                    {activeTab === 'predict' && (
+                    {activePage === 'home' && (
                         <div className="App-content">
-                            <h1 className="App-title">Predict</h1>
-                            <p className="App-subtitle">Create predictions and forecasts</p>
+                            <h1 className="App-title">Home</h1>
+                        </div>
+                    )}
+
+                    {activePage === 'projects' && (
+                        <div className="App-page-header">
+                            <h1 className="App-title">Projects</h1>
+                            <button className="App-btn-primary">+ New Project</button>
+                        </div>
+                    )}
+
+                    {activePage === 'datasets' && (
+                        <div className="App-content">
+                            <h1 className="App-title">Datasets</h1>
                         </div>
                     )}
                 </main>

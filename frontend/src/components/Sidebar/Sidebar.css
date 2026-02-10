@@ -61,6 +61,11 @@
   background-color: var(--color-bg-tertiary);
 }
 
+.sidebar-nav-item--active {
+  color: var(--color-accent);
+  background-color: var(--color-bg-tertiary);
+}
+
 .sidebar--collapsed .sidebar-nav-item {
   display: none;
 }
