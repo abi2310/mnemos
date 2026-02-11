@@ -10,6 +10,16 @@
   flex: 1;
   display: flex;
   overflow: hidden;
+  transition: margin-left var(--transition-slow);
+}
+
+/* Nur App-body verschiebt sich wenn Sidebar gepinnt */
+.App--sidebar-pinned > .App-body {
+  margin-left: 240px;
+}
+
+.App--sidebar-chat > .App-body {
+  margin-left: 400px;
 }
 
 .App-main {

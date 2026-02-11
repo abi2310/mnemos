@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
 import Prepare from './components/Prepare/Prepare';
@@ -8,12 +8,14 @@ import './App.css';
 
 function App() {
     const [activeTab, setActiveTab] = useState('prepare');
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarPinned, setSidebarPinned] = useState(false);
+    const [sidebarHovered, setSidebarHovered] = useState(false);
     const [activePage, setActivePage] = useState('home');
     const [showNewProject, setShowNewProject] = useState(false);
     const [activeProject, setActiveProject] = useState(null);
     const [projectName, setProjectName] = useState('');
     const [projectNameError, setProjectNameError] = useState(false);
+    const hoverTimeoutRef = useRef(null);
 
     const handleCreateProject = () => {
         if (!projectName.trim()) {
@@ -27,19 +29,41 @@ function App() {
         setActiveTab('prepare');
     };
 
+    const handleHoverEnter = useCallback(() => {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        setSidebarHovered(true);
+    }, []);
+
+    const handleHoverLeave = useCallback(() => {
+        hoverTimeoutRef.current = setTimeout(() => setSidebarHovered(false), 250);
+    }, []);
+
+    const sidebarExpanded = sidebarPinned || sidebarHovered;
+    const showChat = activeProject && activeTab === 'explore';
+
     return (
-        <div className="App">
-            <TopBar activeTab={activeTab} onTabChange={setActiveTab} showNav={!!activeProject} />
+        <div className={`App ${sidebarPinned ? 'App--sidebar-pinned' : ''} ${sidebarPinned && showChat ? 'App--sidebar-chat' : ''}`}>
+            <TopBar
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                showNav={!!activeProject}
+                onSidebarToggle={() => setSidebarPinned(prev => !prev)}
+                sidebarPinned={sidebarPinned}
+                onSidebarHoverEnter={handleHoverEnter}
+                onSidebarHoverLeave={handleHoverLeave}
+            />
 
             <div className="App-body">
                 <Sidebar
-                    isOpen={sidebarOpen}
-                    onToggle={() => setSidebarOpen(prev => !prev)}
+                    isExpanded={sidebarExpanded}
+                    isPinned={sidebarPinned}
                     activePage={activePage}
                     onPageChange={(page) => { setActivePage(page); setActiveProject(null); }}
                     activeProject={activeProject}
                     activeTab={activeTab}
                     onNewChat={() => setActiveTab('explore')}
+                    onHoverEnter={handleHoverEnter}
+                    onHoverLeave={handleHoverLeave}
                 />
 
                 <main className="App-main">

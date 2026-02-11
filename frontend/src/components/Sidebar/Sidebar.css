@@ -1,45 +1,35 @@
 .sidebar {
+  position: fixed;
+  left: 0;
+  top: 64px;
+  bottom: 0;
+  z-index: 1100;
   background-color: var(--color-bg-secondary);
   border-right: 1px solid var(--color-border-light);
   display: flex;
   flex-direction: column;
   transition: width var(--transition-slow);
   overflow: hidden;
-  flex-shrink: 0;
+}
+
+.sidebar--collapsed {
+  width: 0;
 }
 
 .sidebar--open {
   width: 240px;
 }
 
-.sidebar--collapsed {
-  width: 48px;
+.sidebar--chat.sidebar--open {
+  width: 400px;
 }
 
-.sidebar-toggle {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: var(--spacing-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
-}
-
-.sidebar-toggle:hover {
-  color: var(--color-text-primary);
-  background-color: var(--color-bg-tertiary);
-}
-
-.sidebar-toggle-icon {
-  font-size: var(--font-size-sm);
+/* Overlay-Schatten nur bei Hover (nicht gepinnt) */
+.sidebar--hover-only {
+  box-shadow: var(--shadow-lg);
 }
 
 .sidebar-nav {
-  flex: 1;
   padding: var(--spacing-2);
   display: flex;
   flex-direction: column;
@@ -64,14 +54,6 @@
 .sidebar-nav-item--active {
   color: var(--color-accent);
   background-color: var(--color-bg-tertiary);
-}
-
-.sidebar--collapsed .sidebar-nav-item {
-  display: none;
-}
-
-.sidebar--chat.sidebar--open {
-  width: 400px;
 }
 
 .sidebar-chat-section {
@@ -147,12 +129,7 @@
   overflow: hidden;
 }
 
-.sidebar--collapsed .sidebar-chat-section {
-  display: none;
-}
-
 /* Nav nicht mehr flex:1 wenn Chat sichtbar */
 .sidebar--chat .sidebar-nav {
   flex: none;
 }
-
