@@ -1,0 +1,354 @@
+/* Datasets Page */
+
+.datasets-page {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.datasets-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.datasets-title {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+/* Toolbar */
+.datasets-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-medium);
+}
+
+.datasets-search {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 400px;
+}
+
+.datasets-search-icon {
+    position: absolute;
+    left: var(--spacing-3);
+    color: var(--color-text-secondary);
+    pointer-events: none;
+}
+
+.datasets-search-input {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-3) var(--spacing-3) var(--spacing-10);
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-base);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    transition: all 0.2s ease;
+}
+
+.datasets-search-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(254, 66, 4, 0.1);
+}
+
+.datasets-search-input::placeholder {
+    color: var(--color-text-secondary);
+}
+
+/* Table Container */
+.datasets-table-container {
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-medium);
+    overflow: hidden;
+}
+
+.datasets-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+.datasets-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+}
+
+/* Table Header */
+.datasets-table-header {
+    padding: var(--spacing-4);
+    text-align: left;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-accent);
+    background-color: var(--color-bg-tertiary);
+    border-bottom: 1px solid var(--color-border-medium);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.datasets-table-header--actions {
+    width: 220px;
+    text-align: right;
+}
+
+/* Table Rows */
+.datasets-table-row {
+    transition: background-color 0.15s ease;
+}
+
+.datasets-table-row:hover {
+    background-color: var(--color-bg-tertiary);
+}
+
+/* Table Cells */
+.datasets-table-cell {
+    padding: var(--spacing-4);
+    color: var(--color-text-primary);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.datasets-table-cell--name {
+    font-weight: var(--font-weight-medium);
+}
+
+.datasets-table-cell--name > div {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.datasets-file-icon {
+    color: var(--color-accent);
+    flex-shrink: 0;
+}
+
+.datasets-table-cell--actions {
+    text-align: right;
+}
+
+/* Row Actions */
+.datasets-row-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-2);
+}
+
+.datasets-row-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    background-color: var(--color-bg-dark);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-base);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.datasets-row-action-btn:hover {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.datasets-row-action-btn--active {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.datasets-row-action-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Expanded Rows */
+.datasets-table-row--expanded {
+    background-color: var(--color-bg-primary);
+}
+
+.datasets-table-row--expanded:hover {
+    background-color: var(--color-bg-primary);
+}
+
+.datasets-table-cell--expanded {
+    padding: 0 !important;
+    border-bottom: 1px solid var(--color-border-medium);
+}
+
+/* Projects Panel */
+.datasets-projects-panel {
+    margin: var(--spacing-4);
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: datasetsSlideDown 0.3s ease;
+}
+
+@keyframes datasetsSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.datasets-projects-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    background-color: var(--color-bg-tertiary);
+    border-bottom: 1px solid var(--color-border-light);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.datasets-projects-header svg {
+    color: var(--color-accent);
+    flex-shrink: 0;
+}
+
+.datasets-projects-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    padding: var(--spacing-1);
+    transition: color var(--transition-fast);
+}
+
+.datasets-projects-close:hover {
+    color: var(--color-text-primary);
+}
+
+.datasets-projects-body {
+    padding: var(--spacing-4);
+}
+
+.datasets-projects-empty {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+    font-style: italic;
+}
+
+/* Preview Placeholder */
+.datasets-preview-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-4) var(--spacing-6);
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+}
+
+.datasets-preview-placeholder p {
+    margin: 0;
+}
+
+.datasets-preview-close {
+    background: none;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-base);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-1) var(--spacing-3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.datasets-preview-close:hover {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-medium);
+}
+
+/* Loading State */
+.datasets-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-12);
+    color: var(--color-text-secondary);
+}
+
+/* Empty State */
+.datasets-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-12);
+    gap: var(--spacing-4);
+}
+
+.datasets-empty-icon {
+    color: var(--color-text-secondary);
+    opacity: 0.5;
+}
+
+.datasets-empty-text {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.datasets-empty-button {
+    padding: var(--spacing-2) var(--spacing-4);
+    background-color: var(--color-accent);
+    border: none;
+    border-radius: var(--radius-base);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.datasets-empty-button:hover {
+    background-color: var(--color-accent-dark);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .datasets-table {
+        font-size: var(--font-size-xs);
+    }
+
+    .datasets-table-header,
+    .datasets-table-cell {
+        padding: var(--spacing-3);
+    }
+
+    .datasets-row-action-btn {
+        padding: var(--spacing-1) var(--spacing-2);
+        font-size: 10px;
+    }
+}

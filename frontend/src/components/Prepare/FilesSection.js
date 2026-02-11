@@ -29,15 +29,15 @@ function FilesSection({
         
         const query = searchQuery.toLowerCase();
         return datasets.filter(dataset => 
-            dataset.filename?.toLowerCase().includes(query) ||
-            dataset.id?.toString().includes(query)
+            dataset.original_name?.toLowerCase().includes(query) ||
+            dataset.dataset_id?.toString().includes(query)
         );
     }, [datasets, searchQuery]);
 
     // Select All Handler
     const handleSelectAll = (e) => {
         if (e.target.checked) {
-            setSelectedIds(filteredDatasets.map(d => d.id));
+            setSelectedIds(filteredDatasets.map(d => d.dataset_id));
         } else {
             setSelectedIds([]);
         }
@@ -205,16 +205,16 @@ function FilesSection({
                             </thead>
                             <tbody>
                                 {filteredDatasets.map((dataset) => (
-                                    <React.Fragment key={dataset.id}>
+                                    <React.Fragment key={dataset.dataset_id}>
                                         <tr 
-                                            className={`files-table-row ${selectedIds.includes(dataset.id) ? 'selected' : ''}`}
+                                            className={`files-table-row ${selectedIds.includes(dataset.dataset_id) ? 'selected' : ''}`}
                                         >
                                         <td className="files-table-cell files-table-cell--checkbox">
                                             <input
                                                 type="checkbox"
-                                                checked={selectedIds.includes(dataset.id)}
-                                                onChange={() => handleSelectRow(dataset.id)}
-                                                aria-label={`Select ${dataset.filename}`}
+                                                checked={selectedIds.includes(dataset.dataset_id)}
+                                                onChange={() => handleSelectRow(dataset.dataset_id)}
+                                                aria-label={`Select ${dataset.original_name}`}
                                             />
                                         </td>
                                         <td className="files-table-cell files-table-cell--name">
@@ -234,11 +234,11 @@ function FilesSection({
                                                         strokeLinejoin="round"
                                                     />
                                                 </svg>
-                                                <span>{dataset.filename || 'Unnamed file'}</span>
+                                                <span>{dataset.original_name || 'Unnamed file'}</span>
                                             </div>
                                         </td>
                                         <td className="files-table-cell">
-                                            {formatFileSize(dataset.file_size)}
+                                            {formatFileSize(dataset.size_bytes)}
                                         </td>
                                         <td className="files-table-cell">
                                             {formatDate(dataset.created_at)}
@@ -246,7 +246,7 @@ function FilesSection({
                                     </tr>
                                     
                                     {/* Preview Row - direkt unter der ausgewählten Zeile */}
-                                    {selectedPreviewFile && selectedPreviewFile.id === dataset.id && (
+                                    {selectedPreviewFile && selectedPreviewFile.dataset_id === dataset.dataset_id && (
                                         <tr className="files-table-row--preview">
                                             <td className="files-table-cell--preview" colSpan="4">
                                                 <FilePreviewPanel

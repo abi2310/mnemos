@@ -3,6 +3,7 @@ import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
 import Prepare from './components/Prepare/Prepare';
 import Explore from './components/Explore/Explore';
+import Datasets from './components/Datasets/Datasets';
 import './App.css';
 
 function App() {
@@ -69,9 +70,7 @@ function App() {
                             )}
 
                             {activePage === 'datasets' && (
-                                <div className="App-content">
-                                    <h1 className="App-title">Datasets</h1>
-                                </div>
+                                <Datasets />
                             )}
                         </>
                     )}

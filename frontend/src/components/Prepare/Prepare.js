@@ -61,7 +61,7 @@ function Prepare() {
             await loadDatasets();
             
             // Falls Preview-File gelöscht wurde, schließen
-            if (selectedPreviewFile && datasetIds.includes(selectedPreviewFile.id)) {
+            if (selectedPreviewFile && datasetIds.includes(selectedPreviewFile.dataset_id)) {
                 setSelectedPreviewFile(null);
             }
         } catch (error) {
