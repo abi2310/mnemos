@@ -18,8 +18,31 @@
 
 /* Kompaktere Dropzone im Modal */
 .modal-body .upload-dropzone {
-    min-height: 120px;
-    padding: var(--spacing-6);
+    min-height: auto;
+    padding: var(--spacing-4) var(--spacing-6);
+}
+
+.modal-body .upload-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0;
+}
+
+.modal-body .upload-dropzone-content {
+    gap: var(--spacing-2);
+}
+
+.modal-body .upload-dropzone-text {
+    font-size: var(--font-size-base);
+}
+
+.modal-body .upload-button {
+    padding: var(--spacing-2) var(--spacing-6);
+    font-size: var(--font-size-sm);
+}
+
+.modal-body .upload-hint {
+    font-size: var(--font-size-xs);
 }
 
 .upload-dropzone:hover:not(.uploading) {

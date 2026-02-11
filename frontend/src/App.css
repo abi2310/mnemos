@@ -30,6 +30,7 @@
   max-width: 1200px;
   margin: 0 auto;
   text-align: center;
+  overflow-y: auto;
 }
 
 .App-title {
@@ -43,6 +44,59 @@
   font-size: var(--font-size-lg);
   color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-8) 0;
+}
+
+/* Quick Guide */
+.App-quickguide {
+  margin-top: var(--spacing-8);
+  text-align: left;
+}
+
+.App-quickguide-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+  text-align: center;
+}
+
+.App-quickguide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.App-quickguide-card {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.App-quickguide-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
+}
+
+.App-quickguide-icon {
+  font-size: var(--font-size-2xl);
+  display: block;
+  margin-bottom: var(--spacing-2);
+}
+
+.App-quickguide-card h3 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.App-quickguide-card p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
 }
 
 .App-page-header {
@@ -146,6 +200,20 @@
 .modal-input:focus {
   outline: none;
   border-color: var(--color-accent);
+}
+
+.modal-input--error {
+  border-color: var(--color-error);
+}
+
+.modal-input--error:focus {
+  border-color: var(--color-error);
+}
+
+.modal-error {
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  margin: calc(-1 * var(--spacing-4)) 0 var(--spacing-4) 0;
 }
 
 .modal-create-btn {
