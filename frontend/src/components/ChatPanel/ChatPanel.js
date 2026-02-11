@@ -6,7 +6,7 @@ import './ChatPanel.css';
  *
  * Sidebar Navigation ähnlich wie ChatGPT/Lovable
  */
-function ChatPanel({ onNewChat, onChatSelect }) {
+function ChatPanel({ onNewChat, onChatSelect, hideNav = false, hideUserProfile = false }) {
     const [activeNav, setActiveNav] = useState('home');
     const [chats, setChats] = useState([]);
     const [activeChat, setActiveChat] = useState(null);
@@ -46,6 +46,7 @@ function ChatPanel({ onNewChat, onChatSelect }) {
     return (
         <div className="chat-panel">
             {/* Navigation */}
+            {!hideNav && (
             <nav className="sidebar-nav">
                 <button
                     className={`nav-item ${activeNav === 'home' ? 'active' : ''}`}
@@ -87,6 +88,7 @@ function ChatPanel({ onNewChat, onChatSelect }) {
                     <span>Shared with me</span>
                 </button>
             </nav>
+            )}
 
             {/* Chat History */}
             <div className="chat-history">
@@ -114,6 +116,7 @@ function ChatPanel({ onNewChat, onChatSelect }) {
             </button>
 
             {/* User Profile */}
+            {!hideUserProfile && (
             <div className="user-profile">
                 <div className="user-avatar">
                     <span>MN</span>
@@ -128,6 +131,7 @@ function ChatPanel({ onNewChat, onChatSelect }) {
                     </svg>
                 </button>
             </div>
+            )}
         </div>
     );
 }

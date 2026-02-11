@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './ChatConversation.css';
 
 /**
@@ -16,6 +16,11 @@ function ChatConversation({ chatId, onBack }) {
         }
     ]);
     const [inputValue, setInputValue] = useState('');
+    const messagesEndRef = useRef(null);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const handleSendMessage = (e) => {
         e.preventDefault();
@@ -76,6 +81,7 @@ function ChatConversation({ chatId, onBack }) {
                         </div>
                     </div>
                 ))}
+                <div ref={messagesEndRef} />
             </div>
 
             <form className="conversation-input-form" onSubmit={handleSendMessage}>

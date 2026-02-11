@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import App from './App';
 import { getDatasets } from './services/DatasetService/datasetService';
 
@@ -55,6 +55,12 @@ describe('App Component', () => {
 
     // ===== Navigation =====
 
+    // Helper: click a sidebar nav item by name
+    const clickSidebarNav = (name) => {
+        const sidebar = document.querySelector('.sidebar');
+        fireEvent.click(within(sidebar).getByText(name));
+    };
+
     test('navigiert zur Projects-Seite über die Sidebar', () => {
         render(<App />);
 
@@ -63,7 +69,7 @@ describe('App Component', () => {
         fireEvent.click(toggleButton);
 
         // Click Projects in sidebar
-        fireEvent.click(screen.getByText('Projects', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Projects');
 
         expect(screen.getByText('+ New Project')).toBeInTheDocument();
         expect(screen.getByText(/Existing projects will be displayed here/i)).toBeInTheDocument();
@@ -76,7 +82,7 @@ describe('App Component', () => {
         fireEvent.click(toggleButton);
 
         await act(async () => {
-            fireEvent.click(screen.getByText('Datasets', { selector: '.sidebar-nav-item' }));
+            clickSidebarNav('Datasets');
         });
 
         await waitFor(() => {
@@ -91,11 +97,11 @@ describe('App Component', () => {
         fireEvent.click(toggleButton);
 
         // Navigate to Projects first
-        fireEvent.click(screen.getByText('Projects', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Projects');
         expect(screen.getByText('+ New Project')).toBeInTheDocument();
 
         // Navigate back to Home
-        fireEvent.click(screen.getByText('Home', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Home');
         expect(screen.getByText(/Welcome to MNEMOS\./i)).toBeInTheDocument();
     });
 
@@ -107,7 +113,7 @@ describe('App Component', () => {
         // Navigate to Projects
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
-        fireEvent.click(screen.getByText('Projects', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Projects');
 
         // Open modal
         fireEvent.click(screen.getByText('+ New Project'));
@@ -124,7 +130,7 @@ describe('App Component', () => {
 
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
-        fireEvent.click(screen.getByText('Projects', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Projects');
 
         fireEvent.click(screen.getByText('+ New Project'));
         fireEvent.click(screen.getByText('Create Project'));
@@ -137,7 +143,7 @@ describe('App Component', () => {
 
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
-        fireEvent.click(screen.getByText('Projects', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Projects');
 
         fireEvent.click(screen.getByText('+ New Project'));
         fireEvent.click(screen.getByText('Create Project'));
@@ -152,7 +158,7 @@ describe('App Component', () => {
 
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
-        fireEvent.click(screen.getByText('Projects', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Projects');
 
         fireEvent.click(screen.getByText('+ New Project'));
         fireEvent.change(screen.getByPlaceholderText(/Enter project name/i), { target: { value: 'My Project' } });
@@ -173,7 +179,7 @@ describe('App Component', () => {
 
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
-        fireEvent.click(screen.getByText('Projects', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Projects');
         fireEvent.click(screen.getByText('+ New Project'));
         fireEvent.change(screen.getByPlaceholderText(/Enter project name/i), { target: { value: 'Test' } });
         fireEvent.click(screen.getByText('Create Project'));
@@ -216,7 +222,7 @@ describe('App Component', () => {
 
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
-        fireEvent.click(screen.getByText('Projects', { selector: '.sidebar-nav-item' }));
+        clickSidebarNav('Projects');
 
         fireEvent.click(screen.getByText('+ New Project'));
         expect(screen.getByText('New Project', { selector: '.modal-title' })).toBeInTheDocument();
