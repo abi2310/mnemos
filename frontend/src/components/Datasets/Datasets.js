@@ -14,6 +14,8 @@ function Datasets() {
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedPreview, setExpandedPreview] = useState(null);
     const [expandedProjects, setExpandedProjects] = useState(null);
+    const [sortKey, setSortKey] = useState('created_at');
+    const [sortDir, setSortDir] = useState('desc');
 
     useEffect(() => {
         loadDatasets();
@@ -32,13 +34,46 @@ function Datasets() {
     };
 
     const filteredDatasets = useMemo(() => {
-        if (!searchQuery.trim()) return datasets;
-        const query = searchQuery.toLowerCase();
-        return datasets.filter(dataset =>
-            dataset.original_name?.toLowerCase().includes(query) ||
-            dataset.dataset_id?.toString().includes(query)
-        );
-    }, [datasets, searchQuery]);
+        let result = datasets;
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(dataset =>
+                dataset.original_name?.toLowerCase().includes(query) ||
+                dataset.dataset_id?.toString().includes(query)
+            );
+        }
+        result = [...result].sort((a, b) => {
+            let valA, valB;
+            if (sortKey === 'original_name') {
+                valA = (a.original_name || '').toLowerCase();
+                valB = (b.original_name || '').toLowerCase();
+            } else if (sortKey === 'size_bytes') {
+                valA = a.size_bytes || 0;
+                valB = b.size_bytes || 0;
+            } else {
+                valA = new Date(a.created_at || 0).getTime();
+                valB = new Date(b.created_at || 0).getTime();
+            }
+            if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return result;
+    }, [datasets, searchQuery, sortKey, sortDir]);
+
+    const handleSort = (key) => {
+        if (sortKey === key) {
+            setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortKey(key);
+            setSortDir('asc');
+        }
+    };
+
+    const sortIndicator = (key) => {
+        if (sortKey !== key) return '';
+        return sortDir === 'asc' ? ' ▲' : ' ▼';
+    };
 
     const formatFileSize = (bytes) => {
         if (!bytes) return '—';
@@ -149,9 +184,9 @@ function Datasets() {
                         <table className="datasets-table">
                             <thead>
                                 <tr>
-                                    <th className="datasets-table-header">Name</th>
-                                    <th className="datasets-table-header">Size</th>
-                                    <th className="datasets-table-header">Upload Date</th>
+                                    <th className="datasets-table-header datasets-table-header--sortable" onClick={() => handleSort('original_name')}>Name{sortIndicator('original_name')}</th>
+                                    <th className="datasets-table-header datasets-table-header--sortable" onClick={() => handleSort('size_bytes')}>Size{sortIndicator('size_bytes')}</th>
+                                    <th className="datasets-table-header datasets-table-header--sortable" onClick={() => handleSort('created_at')}>Upload Date{sortIndicator('created_at')}</th>
                                     <th className="datasets-table-header datasets-table-header--actions">Actions</th>
                                 </tr>
                             </thead>

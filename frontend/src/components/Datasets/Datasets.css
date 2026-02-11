@@ -102,6 +102,16 @@
     z-index: 2;
 }
 
+.datasets-table-header--sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.datasets-table-header--sortable:hover {
+    color: var(--color-text-primary);
+}
+
 .datasets-table-header--actions {
     width: 220px;
     text-align: right;

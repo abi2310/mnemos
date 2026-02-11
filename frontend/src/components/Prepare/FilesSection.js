@@ -22,17 +22,51 @@ function FilesSection({
 }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState([]);
+    const [sortKey, setSortKey] = useState('created_at');
+    const [sortDir, setSortDir] = useState('desc');
 
-    // Filter Datasets basierend auf Search Query
+    // Filter und Sort Datasets
     const filteredDatasets = useMemo(() => {
-        if (!searchQuery.trim()) return datasets;
-        
-        const query = searchQuery.toLowerCase();
-        return datasets.filter(dataset => 
-            dataset.original_name?.toLowerCase().includes(query) ||
-            dataset.dataset_id?.toString().includes(query)
-        );
-    }, [datasets, searchQuery]);
+        let result = datasets;
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(dataset => 
+                dataset.original_name?.toLowerCase().includes(query) ||
+                dataset.dataset_id?.toString().includes(query)
+            );
+        }
+        result = [...result].sort((a, b) => {
+            let valA, valB;
+            if (sortKey === 'original_name') {
+                valA = (a.original_name || '').toLowerCase();
+                valB = (b.original_name || '').toLowerCase();
+            } else if (sortKey === 'size_bytes') {
+                valA = a.size_bytes || 0;
+                valB = b.size_bytes || 0;
+            } else {
+                valA = new Date(a.created_at || 0).getTime();
+                valB = new Date(b.created_at || 0).getTime();
+            }
+            if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return result;
+    }, [datasets, searchQuery, sortKey, sortDir]);
+
+    const handleSort = (key) => {
+        if (sortKey === key) {
+            setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortKey(key);
+            setSortDir('asc');
+        }
+    };
+
+    const sortIndicator = (key) => {
+        if (sortKey !== key) return '';
+        return sortDir === 'asc' ? ' ▲' : ' ▼';
+    };
 
     // Select All Handler
     const handleSelectAll = (e) => {
@@ -198,9 +232,9 @@ function FilesSection({
                                             aria-label="Select all files"
                                         />
                                     </th>
-                                    <th className="files-table-header">Name</th>
-                                    <th className="files-table-header">Size</th>
-                                    <th className="files-table-header">Upload Date</th>
+                                    <th className="files-table-header files-table-header--sortable" onClick={() => handleSort('original_name')}>Name{sortIndicator('original_name')}</th>
+                                    <th className="files-table-header files-table-header--sortable" onClick={() => handleSort('size_bytes')}>Size{sortIndicator('size_bytes')}</th>
+                                    <th className="files-table-header files-table-header--sortable" onClick={() => handleSort('created_at')}>Upload Date{sortIndicator('created_at')}</th>
                                 </tr>
                             </thead>
                             <tbody>
