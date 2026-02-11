@@ -16,6 +16,7 @@ function App() {
     const [projectName, setProjectName] = useState('');
     const [projectNameError, setProjectNameError] = useState(false);
     const hoverTimeoutRef = useRef(null);
+    const hoverSuppressedRef = useRef(false);
 
     const handleCreateProject = () => {
         if (!projectName.trim()) {
@@ -29,7 +30,20 @@ function App() {
         setActiveTab('prepare');
     };
 
+    const handleSidebarToggle = useCallback(() => {
+        setSidebarPinned(prev => {
+            if (prev) {
+                // Beim Unpin: Hover unterdrücken, damit Sidebar sofort schließt
+                hoverSuppressedRef.current = true;
+                setSidebarHovered(false);
+                setTimeout(() => { hoverSuppressedRef.current = false; }, 400);
+            }
+            return !prev;
+        });
+    }, []);
+
     const handleHoverEnter = useCallback(() => {
+        if (hoverSuppressedRef.current) return;
         if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
         setSidebarHovered(true);
     }, []);
@@ -47,7 +61,7 @@ function App() {
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 showNav={!!activeProject}
-                onSidebarToggle={() => setSidebarPinned(prev => !prev)}
+                onSidebarToggle={handleSidebarToggle}
                 sidebarPinned={sidebarPinned}
                 onSidebarHoverEnter={handleHoverEnter}
                 onSidebarHoverLeave={handleHoverLeave}
