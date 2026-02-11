@@ -10,37 +10,70 @@ function App() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activePage, setActivePage] = useState('home');
     const [showNewProject, setShowNewProject] = useState(false);
+    const [activeProject, setActiveProject] = useState(null);
+
+    const handleCreateProject = () => {
+        setActiveProject({ name: 'New Project' });
+        setShowNewProject(false);
+        setActiveTab('prepare');
+    };
 
     return (
         <div className="App">
-            <TopBar activeTab={activeTab} onTabChange={setActiveTab} />
+            <TopBar activeTab={activeTab} onTabChange={setActiveTab} showNav={!!activeProject} />
 
             <div className="App-body">
                 <Sidebar
                     isOpen={sidebarOpen}
                     onToggle={() => setSidebarOpen(prev => !prev)}
                     activePage={activePage}
-                    onPageChange={setActivePage}
+                    onPageChange={(page) => { setActivePage(page); setActiveProject(null); }}
+                    activeProject={activeProject}
+                    activeTab={activeTab}
+                    onNewChat={() => setActiveTab('explore')}
                 />
 
                 <main className="App-main">
-                    {activePage === 'home' && (
-                        <div className="App-content">
-                            <h1 className="App-title">Home</h1>
-                        </div>
-                    )}
+                    {activeProject ? (
+                        <>
+                            {activeTab === 'prepare' && (
+                                <div className="App-content">
+                                    {/* Platzhalter: Tabellenansicht der ausgewählten Datei – wird von anderem Entwickler implementiert */}
+                                </div>
+                            )}
 
-                    {activePage === 'projects' && (
-                        <div className="App-page-header">
-                            <h1 className="App-title">Projects</h1>
-                            <button className="App-btn-primary" onClick={() => setShowNewProject(true)}>+ New Project</button>
-                        </div>
-                    )}
+                            {activeTab === 'explore' && (
+                                <Explore />
+                            )}
 
-                    {activePage === 'datasets' && (
-                        <div className="App-content">
-                            <h1 className="App-title">Datasets</h1>
-                        </div>
+                            {activeTab === 'predict' && (
+                                <div className="App-content">
+                                    <h1 className="App-title">Predict</h1>
+                                    <p className="App-subtitle">Create predictions and forecasts</p>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            {activePage === 'home' && (
+                                <div className="App-content">
+                                    <h1 className="App-title">Home</h1>
+                                </div>
+                            )}
+
+                            {activePage === 'projects' && (
+                                <div className="App-page-header">
+                                    <h1 className="App-title">Projects</h1>
+                                    <button className="App-btn-primary" onClick={() => setShowNewProject(true)}>+ New Project</button>
+                                </div>
+                            )}
+
+                            {activePage === 'datasets' && (
+                                <div className="App-content">
+                                    <h1 className="App-title">Datasets</h1>
+                                </div>
+                            )}
+                        </>
                     )}
                 </main>
             </div>
@@ -62,7 +95,7 @@ function App() {
 
                             <Prepare />
 
-                            <button className="App-btn-primary modal-create-btn">Create Project</button>
+                            <button className="App-btn-primary modal-create-btn" onClick={handleCreateProject}>Create Project</button>
                         </div>
                     </div>
                 </div>

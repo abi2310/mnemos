@@ -1,9 +1,9 @@
 import React from 'react';
 import './TopBar.css';
 
-function TopBar({ activeTab, onTabChange }) {
+function TopBar({ activeTab, onTabChange, showNav }) {
   return (
-    <header className="topbar">
+    <header className={`topbar ${showNav ? 'topbar--with-nav' : ''}`}>
       <div className="topbar-content">
         <div className="topbar-logo">
           <img 

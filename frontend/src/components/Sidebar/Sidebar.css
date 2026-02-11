@@ -70,3 +70,47 @@
   display: none;
 }
 
+.sidebar--chat.sidebar--open {
+  width: 400px;
+}
+
+.sidebar-chat-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  border-top: 1px solid var(--color-border-light);
+  overflow: hidden;
+}
+
+.sidebar-new-chat-btn {
+  background-color: var(--color-accent);
+  color: var(--color-text-primary);
+  border: none;
+  padding: var(--spacing-2) var(--spacing-3);
+  margin: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.sidebar-new-chat-btn:hover {
+  background-color: var(--color-accent-dark);
+}
+
+.sidebar-chat-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar--collapsed .sidebar-chat-section {
+  display: none;
+}
+
+/* Nav nicht mehr flex:1 wenn Chat sichtbar */
+.sidebar--chat .sidebar-nav {
+  flex: none;
+}
+

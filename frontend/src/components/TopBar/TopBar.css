@@ -49,6 +49,10 @@
   align-items: center;
 }
 
+.topbar--with-nav .topbar-nav {
+  display: flex;
+}
+
 .topbar-nav-item {
   background: none;
   border: none;
