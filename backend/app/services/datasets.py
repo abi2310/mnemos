@@ -9,6 +9,7 @@ from fastapi import HTTPException, UploadFile
 from ..core.config import get_settings
 from ..models.datasets import DatasetOut, DatasetStatus, DatasetSchema, ColumnSchema  
 from .storage import StorageService
+from .data_pipeline.pipeline import build_default_pipeline
 
 
 
@@ -50,7 +51,17 @@ class DatasetService:
             storage_key=storage_key,
         )
 
+        # Runs data pipeline
         self._store[dataset_id] = meta
+        pipeline = build_default_pipeline()
+        pipeline.run(
+            {
+                "dataset_id": dataset_id,
+                "storage_key": storage_key,
+                "original_name": meta.original_name,
+                "size_bytes": meta.size_bytes,
+            }
+        )
 
         return meta
 
@@ -128,4 +139,3 @@ class DatasetService:
             columns=columns,
         )
         return schema
-
