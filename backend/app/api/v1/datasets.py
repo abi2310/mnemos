@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
@@ -45,3 +45,10 @@ async def get_dataset_schema(
     ds_svc: DatasetService = Depends(get_dataset_service),
 ):
     return ds_svc.infer_schema(dataset_id)
+
+
+@router.get("/datasets/{dataset_id}/quality-report", response_model=Dict[str, Any])
+async def get_quality_report(
+    dataset_id: str, ds_svc: DatasetService = Depends(get_dataset_service)
+):
+    return ds_svc.get_quality_report(dataset_id)

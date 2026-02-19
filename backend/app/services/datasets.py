@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
+import json
 from uuid import uuid4
 import pandas as pd
 
@@ -140,3 +141,15 @@ class DatasetService:
             columns=columns,
         )
         return schema
+
+    def get_quality_report(self, dataset_id: str) -> Dict[str, Any]:
+        meta = self._store.get(dataset_id)
+        if not meta:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+
+        report_key = f"datasets/{dataset_id}/quality_report.json"
+        try:
+            with self._storage.open(report_key) as handle:
+                return json.load(handle)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="Quality report not found")
