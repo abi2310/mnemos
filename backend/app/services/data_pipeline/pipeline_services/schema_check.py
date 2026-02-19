@@ -32,8 +32,9 @@ def _find_unnamed_columns(columns: List[str]) -> List[str]:
 def _find_constant_columns(df: pd.DataFrame) -> List[str]:
     # Detect columns with a single unique value (including NaN).
     constant_cols = []
-    for col in df.columns:
-        if df[col].nunique(dropna=False) <= 1:
+    for idx, col in enumerate(df.columns):
+        series = df.iloc[:, idx]
+        if series.nunique(dropna=False) <= 1:
             constant_cols.append(str(col))
     return constant_cols
 
