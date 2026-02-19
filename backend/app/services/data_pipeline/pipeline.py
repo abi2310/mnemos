@@ -65,7 +65,7 @@ def build_default_pipeline() -> DataQualityPipeline:
         PipelineStep("missing_values", _load_handler("missing_values", f"{BASE_SERVICE_PATH}.missing_values")),
         PipelineStep("type_inference", _load_handler("type_inference", f"{BASE_SERVICE_PATH}.type_inference")),
         PipelineStep("inconsistencies", _load_handler("inconsistencies", f"{BASE_SERVICE_PATH}.inconsistencies")),
-        PipelineStep("outlier_analysis", _load_handler("outlier_analysis", f"{BASE_SERVICE_PATH}.outlier_analysis"),),
-        PipelineStep("quality_report", _load_handler("quality_report", f"{BASE_SERVICE_PATH}.quality_report"),)
+        # Not Implemented yet: PipelineStep("outlier_analysis", _load_handler("outlier_analysis", f"{BASE_SERVICE_PATH}.outlier_analysis"),),
+        # Not Implemented yet: PipelineStep("quality_report", _load_handler("quality_report", f"{BASE_SERVICE_PATH}.quality_report"),)
     ]
     return DataQualityPipeline(steps)

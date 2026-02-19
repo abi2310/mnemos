@@ -43,10 +43,12 @@ def _generate_default_names(count: int) -> List[str]:
 
 def _apply_no_header(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     # Move the current column names into the first row and generate new headers
-    new_columns = _generate_default_names(len(df.columns))
-    first_row = pd.DataFrame([list(df.columns)], columns=new_columns)
-    updated_df = pd.concat([first_row, df], ignore_index=True)
+    original_names = [str(name) for name in df.columns]
+    new_columns = _generate_default_names(len(original_names))
+    updated_df = df.copy()
     updated_df.columns = new_columns
+    first_row = pd.DataFrame([original_names], columns=new_columns)
+    updated_df = pd.concat([first_row, updated_df], ignore_index=True)
     return updated_df, new_columns
 
 

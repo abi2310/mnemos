@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 
-from ...core.config import get_settings
-from ..storage import StorageService
+from app.core.config import get_settings
+from app.services.storage import StorageService
 
 PipelineContext = Dict[str, Any]
 
@@ -27,7 +27,19 @@ def _sniff_encoding(sample: bytes) -> str:
 
 
 def _sniff_delimiter(sample_text: str) -> str:
-    # Use csv.Sniffer to detect a delimiter from the sample text.
+    # Prefer a simple frequency heuristic, fall back to csv.Sniffer.
+    lines = [line for line in sample_text.splitlines() if line.strip()]
+    best_delimiter = ","
+    best_score = 0
+    for candidate in _DELIMITER_CANDIDATES:
+        counts = [line.count(candidate) for line in lines]
+        score = min(counts) if counts else 0
+        if score > best_score:
+            best_score = score
+            best_delimiter = candidate
+    if best_score > 0:
+        return best_delimiter
+
     sniffer = csv.Sniffer()
     try:
         dialect = sniffer.sniff(sample_text, delimiters=_DELIMITER_CANDIDATES)
@@ -78,8 +90,13 @@ def run(context: PipelineContext) -> PipelineContext:
     if not storage_key:
         raise ValueError("Ingestion requires 'storage_key' in context.")
 
-    settings = get_settings()
-    storage = StorageService(settings.storage_dir)
+    storage = context.get("storage")
+    if storage is None:
+        storage_dir = context.get("storage_dir")
+        if storage_dir is None:
+            settings = get_settings()
+            storage_dir = settings.storage_dir
+        storage = StorageService(storage_dir)
 
     sample_bytes = _read_sample(storage, storage_key)
     encoding = _sniff_encoding(sample_bytes)

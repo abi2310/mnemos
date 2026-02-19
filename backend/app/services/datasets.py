@@ -60,6 +60,7 @@ class DatasetService:
                 "storage_key": storage_key,
                 "original_name": meta.original_name,
                 "size_bytes": meta.size_bytes,
+                "storage": self._storage,
             }
         )
 
