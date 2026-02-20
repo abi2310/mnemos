@@ -23,6 +23,7 @@ _YEAR_MAX = 2200
 _MIN_CONFIDENCE = 0.7
 _BOOL_THRESHOLD = 0.95
 _DATETIME_THRESHOLD = 0.7
+_DATE_YYYYMMDD_THRESHOLD = 0.8
 
 
 def _try_bool(series: pd.Series) -> float:
@@ -57,6 +58,18 @@ def _try_datetime(series: pd.Series) -> float:
     return best_rate
 
 
+def _try_yyyymmdd(series: pd.Series) -> float:
+    # Detect numeric-like dates in YYYYMMDD format.
+    values = series.dropna().astype(str).str.strip()
+    if values.empty:
+        return 0.0
+    pattern = values.str.fullmatch(r"\d{8}")
+    if pattern is None or not pattern.any():
+        return 0.0
+    parsed = pd.to_datetime(values[pattern], errors="coerce", format="%Y%m%d")
+    return float(parsed.notna().mean())
+
+
 def _is_year_like(series: pd.Series) -> bool:
     # Detect year-like numeric columns (integer-ish values in a year range).
     values = series.dropna().astype(str).str.strip()
@@ -75,6 +88,7 @@ def _is_year_like(series: pd.Series) -> bool:
 def _infer_type(series: pd.Series) -> Dict[str, Any]:
     # Checks which type fits best and returns confidence scores for each type (based on cosine similarity)
     numeric_rate = _try_numeric(series)
+    yyyymmdd_rate = _try_yyyymmdd(series)
     datetime_rate = 0.0
     if numeric_rate < 0.95:
         datetime_rate = _try_datetime(series)
@@ -84,6 +98,8 @@ def _infer_type(series: pd.Series) -> Dict[str, Any]:
     bool_rate = _try_bool(series)
     if bool_rate < _BOOL_THRESHOLD:
         bool_rate = 0.0
+    if yyyymmdd_rate >= _DATE_YYYYMMDD_THRESHOLD:
+        datetime_rate = max(datetime_rate, yyyymmdd_rate)
     if datetime_rate < _DATETIME_THRESHOLD:
         datetime_rate = 0.0
 

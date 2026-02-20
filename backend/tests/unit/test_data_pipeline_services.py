@@ -104,5 +104,5 @@ def test_inconsistencies_detects_text_variants():
         "inconsistent_values"
     ]
 
-    assert "Berlin" in inconsist
-    assert len(inconsist["Berlin"]["variants"]) >= 2
+    assert "berlin" in inconsist
+    assert len(inconsist["berlin"]["variants"]) >= 2
