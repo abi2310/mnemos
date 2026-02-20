@@ -31,7 +31,7 @@ def _normalize_missing_tokens(df: pd.DataFrame, tokens: List[str]) -> pd.DataFra
             return pd.NA
         return value
 
-    return normalized.applymap(_to_missing)
+    return normalized.map(_to_missing)
 
 
 def _missing_stats(df: pd.DataFrame) -> Dict[str, Any]:

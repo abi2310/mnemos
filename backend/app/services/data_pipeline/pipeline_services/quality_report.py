@@ -23,7 +23,6 @@ def _build_report(context: PipelineContext) -> Dict[str, Any]:
         "missing_values": context.get("missing_values"),
         "type_inference": context.get("type_inference"),
         "inconsistencies": context.get("inconsistencies"),
-        "outlier_analysis": context.get("outlier_analysis"),
     }
 
 

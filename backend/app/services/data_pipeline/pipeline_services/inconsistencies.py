@@ -23,14 +23,15 @@ def _normalize_text(value: Any) -> str:
 
 def _text_inconsistencies(series: pd.Series) -> Dict[str, Any]:
     # Detect case/whitespace inconsistencies in string-like columns.
-    normalized = series.dropna().map(_normalize_text)
-    if normalized.empty:
+    normalized = series.map(_normalize_text)
+    if normalized.dropna().empty:
         return {"inconsistent_values": {}}
 
     counts = normalized.value_counts()
     inconsistencies = {}
     for norm_value, count in counts.items():
-        originals = series[normalized == norm_value].dropna().astype(str).unique().tolist()
+        mask = normalized == norm_value
+        originals = series[mask].dropna().astype(str).unique().tolist()
         if len(originals) > 1:
             inconsistencies[norm_value] = {"variants": originals, "count": int(count)}
 
@@ -43,7 +44,12 @@ def run(context: PipelineContext) -> PipelineContext:
     if df is None:
         raise ValueError("Inconsistencies requires 'dataframe' in context.")
 
-    text_columns = [col for col in df.columns if df[col].dtype == object]
+    inferred = context.get("type_inference", {}).get("columns", {})
+    text_columns = [
+        col
+        for col in df.columns
+        if inferred.get(str(col), {}).get("inferred_type") == "string"
+    ]
 
     column_inconsistencies = {}
     for column in text_columns:

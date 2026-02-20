@@ -98,7 +98,8 @@ def test_type_inference_detects_common_types():
 
 def test_inconsistencies_detects_text_variants():
     df = pd.DataFrame({"city": ["Berlin", "Berlin ", "Berlin\t", "Munich"]})
-    result = inconsistencies.run({"dataframe": df})
+    inferred = type_inference.run({"dataframe": df})["type_inference"]
+    result = inconsistencies.run({"dataframe": df, "type_inference": inferred})
     inconsist = result["inconsistencies"]["text_inconsistencies"]["city"][
         "inconsistent_values"
     ]

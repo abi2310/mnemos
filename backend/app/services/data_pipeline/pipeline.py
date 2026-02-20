@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import importlib
+import logging
 from typing import Any, Callable, Dict, List, Optional
 
 PipelineContext = Dict[str, Any]
 PipelineHandler = Callable[[PipelineContext], Optional[PipelineContext]]
 
 BASE_SERVICE_PATH = "app.services.data_pipeline.pipeline_services"
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -25,9 +27,11 @@ class DataQualityPipeline:
         # Run each step sequentially, allowing handlers to replace the context
         current = context
         for step in self._steps:
+            logger.info("data_pipeline.start_step %s", step.name)
             result = step.handler(current)
             if result is not None:
                 current = result
+            logger.info("data_pipeline.end_step %s", step.name)
         return current
 
 
