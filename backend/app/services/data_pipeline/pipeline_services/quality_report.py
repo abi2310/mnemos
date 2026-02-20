@@ -47,6 +47,13 @@ def run(context: PipelineContext) -> PipelineContext:
     payload = json.dumps(report, ensure_ascii=True, indent=2).encode("utf-8")
 
     storage = _resolve_storage(context)
+    df = context.get("dataframe")
+    cleaned_key = None
+    if df is not None:
+        cleaned_key = f"datasets/{dataset_id}/cleaned.csv"
+        cleaned_payload = df.to_csv(index=False).encode("utf-8")
+        storage.save(cleaned_key, io.BytesIO(cleaned_payload))
+
     report_key = f"datasets/{dataset_id}/quality_report.json"
     storage.save(report_key, io.BytesIO(payload))
 
@@ -54,5 +61,6 @@ def run(context: PipelineContext) -> PipelineContext:
     context["quality_report"] = {
         "storage_key": report_key,
         "report": report,
+        "cleaned_storage_key": cleaned_key,
     }
     return context

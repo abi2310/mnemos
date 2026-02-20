@@ -27,13 +27,16 @@ def _text_inconsistencies(series: pd.Series) -> Dict[str, Any]:
     if normalized.dropna().empty:
         return {"inconsistent_values": {}}
 
-    counts = normalized.value_counts()
     inconsistencies = {}
-    for norm_value, count in counts.items():
-        mask = normalized == norm_value
-        originals = series[mask].dropna().astype(str).unique().tolist()
-        if len(originals) > 1:
-            inconsistencies[norm_value] = {"variants": originals, "count": int(count)}
+    data = pd.DataFrame({"normalized": normalized, "original": series})
+    data = data[data["normalized"] != ""].dropna(subset=["original"])
+    for norm_value, group in data.groupby("normalized")["original"]:
+        variants = group.astype(str).unique().tolist()
+        if len(variants) > 1:
+            inconsistencies[norm_value] = {
+                "variants": variants,
+                "count": int(len(group)),
+            }
 
     return {"inconsistent_values": inconsistencies}
 
