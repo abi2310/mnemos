@@ -15,6 +15,7 @@ def _normalize_text(value: Any) -> str:
         return ""
     text = str(value)
     text = unicodedata.normalize("NFKC", text)
+    text = text.lower()
     text = re.sub(r"[\t\r\n]+", " ", text)
     text = text.strip()
     text = re.sub(r"\s{2,}", " ", text)

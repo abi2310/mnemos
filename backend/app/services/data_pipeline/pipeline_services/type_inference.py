@@ -20,9 +20,9 @@ _BOOL_TRUE = {"true", "t", "1", "yes", "y"}
 _BOOL_FALSE = {"false", "f", "0", "no", "n"}
 _YEAR_MIN = 1800
 _YEAR_MAX = 2200
-_MIN_CONFIDENCE = 0.8
+_MIN_CONFIDENCE = 0.7
 _BOOL_THRESHOLD = 0.95
-_DATETIME_THRESHOLD = 0.8
+_DATETIME_THRESHOLD = 0.7
 
 
 def _try_bool(series: pd.Series) -> float:
