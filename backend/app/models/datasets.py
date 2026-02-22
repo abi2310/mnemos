@@ -28,5 +28,9 @@ class DatasetOut(BaseModel):
     storage_key: str
 
 
+class DatasetUpdate(BaseModel):
+    original_name: str | None = None
+
+
 class DatasetCreateResult(BaseModel):
     dataset: DatasetOut
