@@ -12,7 +12,7 @@ PipelineContext = Dict[str, Any]
 def _normalize_text(value: Any) -> str:
     # Normalize string with safe, limited transformations (whitespace/control/NFKC).
     if value is None or pd.isna(value):
-        return ""
+        return pd.NA
     text = str(value)
     text = unicodedata.normalize("NFKC", text)
     text = text.lower()
@@ -60,6 +60,11 @@ def run(context: PipelineContext) -> PipelineContext:
         column_inconsistencies[str(column)] = _text_inconsistencies(df[column])
 
     context = dict(context)
+    if text_columns:
+        updated_df = df.copy()
+        for column in text_columns:
+            updated_df[column] = updated_df[column].map(_normalize_text)
+        context["dataframe"] = updated_df
     context["inconsistencies"] = {
         "text_inconsistencies": column_inconsistencies,
     }
