@@ -4,7 +4,7 @@
   padding: 0;
   position: sticky;
   top: 0;
-  z-index: var(--z-index-sticky);
+  z-index: 1200;
 }
 
 .topbar-content {
@@ -17,13 +17,35 @@
   position: relative;
 }
 
+/* Sidebar Toggle im TopBar */
+.topbar-sidebar-toggle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 64px;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.topbar-sidebar-toggle:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
 .topbar-logo {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
   position: absolute;
-  left: 0;
-  padding-left: var(--spacing-4);
+  left: calc(64px + var(--spacing-3));
 }
 
 .topbar-logo-img {
@@ -44,9 +66,13 @@
 }
 
 .topbar-nav {
-  display: flex;
+  display: none;
   gap: var(--spacing-2);
   align-items: center;
+}
+
+.topbar--with-nav .topbar-nav {
+  display: flex;
 }
 
 .topbar-nav-item {
@@ -79,4 +105,3 @@
   height: 2px;
   background-color: var(--color-accent);
 }
-

@@ -64,10 +64,10 @@ function FilePreviewPanel({ file, onClose }) {
                             />
                         </svg>
                         <div>
-                            <h3 className="preview-title">{file.filename || 'Unnamed file'}</h3>
+                            <h3 className="preview-title">{file.original_name || 'Unnamed file'}</h3>
                             <div className="preview-metadata">
                                 <span className="preview-metadata-item">
-                                    {formatFileSize(file.file_size)}
+                                    {formatFileSize(file.size_bytes)}
                                 </span>
                                 <span className="preview-metadata-divider">•</span>
                                 <span className="preview-metadata-item">
