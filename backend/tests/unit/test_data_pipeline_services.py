@@ -1,7 +1,6 @@
 import io
 
 import pandas as pd
-import pytest
 
 from app.core.config import Settings
 from app.services.data_pipeline.pipeline_services import (
