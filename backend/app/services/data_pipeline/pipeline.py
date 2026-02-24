@@ -29,16 +29,16 @@ class DataQualityPipeline:
         for step in self._steps:
             if current.get("pipeline_error") and step.name != "quality_report":
                 logger.info(
-                    "data_pipeline.skip_step %s (pipeline_error in %s)",
+                    "ERROR: data_pipeline.skip_step %s (pipeline_error in %s)",
                     step.name,
                     current["pipeline_error"].get("step"), # Error Catching
                 )
                 continue
-            logger.info("data_pipeline.start_step %s", step.name)
+            logger.info("PIPELINE: data_pipeline.start_step %s", step.name)
             result = step.handler(current)
             if result is not None:
                 current = result
-            logger.info("data_pipeline.end_step %s", step.name)
+            logger.info("PIPELINE: data_pipeline.end_step %s", step.name)
         return current
 
 
