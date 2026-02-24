@@ -42,7 +42,7 @@ def _sniff_delimiter(sample_text: str) -> str:
 
     sniffer = csv.Sniffer()
     try:
-        dialect = sniffer.sniff(sample_text, delimiters=_DELIMITER_CANDIDATES)
+        dialect = sniffer.sniff(sample_text, delimiters="".join(_DELIMITER_CANDIDATES))
         return dialect.delimiter
     except Exception:
         return ","

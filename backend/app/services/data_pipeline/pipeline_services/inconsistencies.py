@@ -9,7 +9,7 @@ import pandas as pd
 PipelineContext = Dict[str, Any]
 
 
-def _normalize_text(value: Any) -> str:
+def _normalize_text(value: Any) -> Any:
     # Normalize string with safe, limited transformations (whitespace/control/NFKC).
     if value is None or pd.isna(value):
         return pd.NA
