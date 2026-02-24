@@ -1,10 +1,20 @@
 import React from 'react';
 import './TopBar.css';
 
-function TopBar({ activeTab, onTabChange }) {
+function TopBar({ activeTab, onTabChange, showNav, onSidebarToggle, sidebarPinned, onSidebarHoverEnter, onSidebarHoverLeave }) {
   return (
-    <header className="topbar">
+    <header className={`topbar ${showNav ? 'topbar--with-nav' : ''}`}>
       <div className="topbar-content">
+        <button
+          className="topbar-sidebar-toggle"
+          onClick={onSidebarToggle}
+          onMouseEnter={onSidebarHoverEnter}
+          onMouseLeave={onSidebarHoverLeave}
+          aria-label={sidebarPinned ? 'Sidebar loslösen' : 'Sidebar fixieren'}
+        >
+          {sidebarPinned ? '✕' : '☰'}
+        </button>
+
         <div className="topbar-logo">
           <img 
             src="/mnemoslogo.png" 
@@ -42,4 +52,3 @@ function TopBar({ activeTab, onTabChange }) {
 }
 
 export default TopBar;
-

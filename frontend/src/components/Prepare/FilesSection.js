@@ -22,22 +22,56 @@ function FilesSection({
 }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState([]);
+    const [sortKey, setSortKey] = useState('created_at');
+    const [sortDir, setSortDir] = useState('desc');
 
-    // Filter Datasets basierend auf Search Query
+    // Filter und Sort Datasets
     const filteredDatasets = useMemo(() => {
-        if (!searchQuery.trim()) return datasets;
-        
-        const query = searchQuery.toLowerCase();
-        return datasets.filter(dataset => 
-            dataset.filename?.toLowerCase().includes(query) ||
-            dataset.id?.toString().includes(query)
-        );
-    }, [datasets, searchQuery]);
+        let result = datasets;
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(dataset => 
+                dataset.original_name?.toLowerCase().includes(query) ||
+                dataset.dataset_id?.toString().includes(query)
+            );
+        }
+        result = [...result].sort((a, b) => {
+            let valA, valB;
+            if (sortKey === 'original_name') {
+                valA = (a.original_name || '').toLowerCase();
+                valB = (b.original_name || '').toLowerCase();
+            } else if (sortKey === 'size_bytes') {
+                valA = a.size_bytes || 0;
+                valB = b.size_bytes || 0;
+            } else {
+                valA = new Date(a.created_at || 0).getTime();
+                valB = new Date(b.created_at || 0).getTime();
+            }
+            if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return result;
+    }, [datasets, searchQuery, sortKey, sortDir]);
+
+    const handleSort = (key) => {
+        if (sortKey === key) {
+            setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortKey(key);
+            setSortDir('asc');
+        }
+    };
+
+    const sortIndicator = (key) => {
+        if (sortKey !== key) return '';
+        return sortDir === 'asc' ? ' ▲' : ' ▼';
+    };
 
     // Select All Handler
     const handleSelectAll = (e) => {
         if (e.target.checked) {
-            setSelectedIds(filteredDatasets.map(d => d.id));
+            setSelectedIds(filteredDatasets.map(d => d.dataset_id));
         } else {
             setSelectedIds([]);
         }
@@ -52,33 +86,6 @@ function FilesSection({
                 return [...prev, datasetId];
             }
         });
-    };
-
-    // Bulk Delete Handler
-    const handleBulkDelete = async () => {
-        if (selectedIds.length === 0) return;
-        
-        if (!window.confirm(`Delete ${selectedIds.length} file(s)?`)) return;
-
-        try {
-            await onDelete(selectedIds);
-            setSelectedIds([]);
-        } catch (error) {
-            console.error('Bulk delete failed:', error);
-            alert('Failed to delete files. Please try again.');
-        }
-    };
-
-    // Single Delete Handler
-    const handleSingleDelete = async (datasetId) => {
-        if (!window.confirm('Delete this file?')) return;
-
-        try {
-            await onDelete([datasetId]);
-        } catch (error) {
-            console.error('Delete failed:', error);
-            alert('Failed to delete file. Please try again.');
-        }
     };
 
     // Format file size
@@ -142,58 +149,7 @@ function FilesSection({
                     />
                 </div>
 
-                {/* Bulk Actions */}
-                <div className="files-bulk-actions">
-                    <button
-                        className="files-action-button"
-                        disabled={selectedIds.length === 0}
-                        title="Download selected files"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path 
-                                d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5 5m0 0l-5-5m5 5V3" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                        Download ({selectedIds.length})
-                    </button>
-                    <button
-                        className="files-action-button files-action-button--danger"
-                        disabled={selectedIds.length === 0}
-                        onClick={handleBulkDelete}
-                        title="Delete selected files"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path 
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                        Delete ({selectedIds.length})
-                    </button>
-                    <button
-                        className="files-action-button"
-                        disabled={selectedIds.length === 0}
-                        title="Chat with selected files"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path 
-                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                        Chat with files ({selectedIds.length})
-                    </button>
-                </div>
+                {/* Bulk Actions - reserviert für zukünftige Nutzung */}
             </div>
 
             {/* Table */}
@@ -249,24 +205,23 @@ function FilesSection({
                                             aria-label="Select all files"
                                         />
                                     </th>
-                                    <th className="files-table-header">Name</th>
-                                    <th className="files-table-header">Size</th>
-                                    <th className="files-table-header">Upload Date</th>
-                                    <th className="files-table-header files-table-header--actions">Actions</th>
+                                    <th className="files-table-header files-table-header--sortable" onClick={() => handleSort('original_name')}>Name{sortIndicator('original_name')}</th>
+                                    <th className="files-table-header files-table-header--sortable" onClick={() => handleSort('size_bytes')}>Size{sortIndicator('size_bytes')}</th>
+                                    <th className="files-table-header files-table-header--sortable" onClick={() => handleSort('created_at')}>Upload Date{sortIndicator('created_at')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredDatasets.map((dataset) => (
-                                    <React.Fragment key={dataset.id}>
+                                    <React.Fragment key={dataset.dataset_id}>
                                         <tr 
-                                            className={`files-table-row ${selectedIds.includes(dataset.id) ? 'selected' : ''}`}
+                                            className={`files-table-row ${selectedIds.includes(dataset.dataset_id) ? 'selected' : ''}`}
                                         >
                                         <td className="files-table-cell files-table-cell--checkbox">
                                             <input
                                                 type="checkbox"
-                                                checked={selectedIds.includes(dataset.id)}
-                                                onChange={() => handleSelectRow(dataset.id)}
-                                                aria-label={`Select ${dataset.filename}`}
+                                                checked={selectedIds.includes(dataset.dataset_id)}
+                                                onChange={() => handleSelectRow(dataset.dataset_id)}
+                                                aria-label={`Select ${dataset.original_name}`}
                                             />
                                         </td>
                                         <td className="files-table-cell files-table-cell--name">
@@ -286,83 +241,21 @@ function FilesSection({
                                                         strokeLinejoin="round"
                                                     />
                                                 </svg>
-                                                <span>{dataset.filename || 'Unnamed file'}</span>
+                                                <span>{dataset.original_name || 'Unnamed file'}</span>
                                             </div>
                                         </td>
                                         <td className="files-table-cell">
-                                            {formatFileSize(dataset.file_size)}
+                                            {formatFileSize(dataset.size_bytes)}
                                         </td>
                                         <td className="files-table-cell">
                                             {formatDate(dataset.created_at)}
                                         </td>
-                                        <td className="files-table-cell files-table-cell--actions">
-                                            <div className="files-row-actions">
-                                                <button
-                                                    className="files-row-action-button"
-                                                    onClick={() => onOpenPreview(dataset)}
-                                                    title="Open preview"
-                                                    aria-label="Open preview"
-                                                >
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                                        <path 
-                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2" 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round"
-                                                        />
-                                                        <path 
-                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2" 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    Open
-                                                </button>
-                                                <button
-                                                    className="files-row-action-button"
-                                                    disabled
-                                                    title="Download file"
-                                                    aria-label="Download file"
-                                                >
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                                        <path 
-                                                            d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5 5m0 0l-5-5m5 5V3" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2" 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    Download
-                                                </button>
-                                                <button
-                                                    className="files-row-action-button files-row-action-button--danger"
-                                                    onClick={() => handleSingleDelete(dataset.id)}
-                                                    title="Delete file"
-                                                    aria-label="Delete file"
-                                                >
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                                        <path 
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2" 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </td>
                                     </tr>
                                     
                                     {/* Preview Row - direkt unter der ausgewählten Zeile */}
-                                    {selectedPreviewFile && selectedPreviewFile.id === dataset.id && (
+                                    {selectedPreviewFile && selectedPreviewFile.dataset_id === dataset.dataset_id && (
                                         <tr className="files-table-row--preview">
-                                            <td className="files-table-cell--preview" colSpan="5">
+                                            <td className="files-table-cell--preview" colSpan="4">
                                                 <FilePreviewPanel
                                                     file={selectedPreviewFile}
                                                     onClose={onClosePreview}
