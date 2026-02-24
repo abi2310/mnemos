@@ -53,13 +53,13 @@ describe('TopBar Component', () => {
 
     test('versteckt Navigation wenn showNav false ist', () => {
         render(<TopBar {...defaultProps} showNav={false} />);
-        const topbar = document.querySelector('.topbar');
+        const topbar = screen.getByRole('banner');
         expect(topbar).not.toHaveClass('topbar--with-nav');
     });
 
     test('zeigt Navigation wenn showNav true ist', () => {
         render(<TopBar {...defaultProps} showNav={true} />);
-        const topbar = document.querySelector('.topbar');
+        const topbar = screen.getByRole('banner');
         expect(topbar).toHaveClass('topbar--with-nav');
     });
 

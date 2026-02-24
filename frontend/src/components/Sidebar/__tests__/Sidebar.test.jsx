@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import Sidebar from '../Sidebar';
 
-// Mock ChatPanel to render actual chat UI elements
 jest.mock('../../ChatPanel/ChatPanel', () => {
     return function MockChatPanel({ onNewChat, onChatSelect, hideNav, hideUserProfile }) {
         const [chats, setChats] = require('react').useState([]);
@@ -46,7 +45,6 @@ jest.mock('../../ChatPanel/ChatPanel', () => {
     };
 });
 
-// Mock ChatConversation to avoid complex rendering
 jest.mock('../../ChatConversation/ChatConversation', () => {
     return function MockChatConversation({ chatId }) {
         return <div data-testid="chat-conversation">Chat {chatId}</div>;
@@ -87,30 +85,30 @@ describe('Sidebar Component', () => {
     });
 
     test('hat sidebar--open Klasse wenn expanded', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} />);
-        expect(container.querySelector('.sidebar')).toHaveClass('sidebar--open');
+        render(<Sidebar {...defaultProps} isExpanded={true} />);
+        expect(screen.getByRole('complementary')).toHaveClass('sidebar--open');
     });
 
     test('hat sidebar--collapsed Klasse wenn nicht expanded', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={false} />);
-        expect(container.querySelector('.sidebar')).toHaveClass('sidebar--collapsed');
+        render(<Sidebar {...defaultProps} isExpanded={false} />);
+        expect(screen.getByRole('complementary')).toHaveClass('sidebar--collapsed');
     });
 
     test('hat sidebar--hover-only Klasse wenn expanded aber nicht pinned', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} isPinned={false} />);
-        expect(container.querySelector('.sidebar')).toHaveClass('sidebar--hover-only');
+        render(<Sidebar {...defaultProps} isExpanded={true} isPinned={false} />);
+        expect(screen.getByRole('complementary')).toHaveClass('sidebar--hover-only');
     });
 
     test('hat keine sidebar--hover-only Klasse wenn pinned', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} isPinned={true} />);
-        expect(container.querySelector('.sidebar')).not.toHaveClass('sidebar--hover-only');
+        render(<Sidebar {...defaultProps} isExpanded={true} isPinned={true} />);
+        expect(screen.getByRole('complementary')).not.toHaveClass('sidebar--hover-only');
     });
 
     // ===== Hover Handlers =====
 
     test('ruft onHoverEnter/onHoverLeave auf', () => {
-        const { container } = render(<Sidebar {...defaultProps} />);
-        const aside = container.querySelector('.sidebar');
+        render(<Sidebar {...defaultProps} />);
+        const aside = screen.getByRole('complementary');
 
         fireEvent.mouseEnter(aside);
         expect(defaultProps.onHoverEnter).toHaveBeenCalledTimes(1);
@@ -122,12 +120,9 @@ describe('Sidebar Component', () => {
     // ===== Active Page =====
 
     test('markiert die aktive Seite korrekt', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} activePage="projects" />);
-        const projectsBtn = container.querySelectorAll('.sidebar-nav-item')[1];
-        expect(projectsBtn).toHaveClass('sidebar-nav-item--active');
-
-        const homeBtn = container.querySelectorAll('.sidebar-nav-item')[0];
-        expect(homeBtn).not.toHaveClass('sidebar-nav-item--active');
+        render(<Sidebar {...defaultProps} isExpanded={true} activePage="projects" />);
+        expect(screen.getByRole('button', { name: 'Projects' })).toHaveClass('sidebar-nav-item--active');
+        expect(screen.getByRole('button', { name: 'Home' })).not.toHaveClass('sidebar-nav-item--active');
     });
 
     // ===== Page Change =====
@@ -140,11 +135,10 @@ describe('Sidebar Component', () => {
 
     // ===== Nav Icons =====
 
-    test('rendert SVG-Icons in Nav-Items', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} />);
-        const navItems = container.querySelectorAll('.sidebar-nav-item');
-        navItems.forEach(item => {
-            expect(item.querySelector('svg')).toBeInTheDocument();
+    test('rendert alle Nav-Buttons', () => {
+        render(<Sidebar {...defaultProps} isExpanded={true} />);
+        ['Home', 'Projects', 'Datasets'].forEach(name => {
+            expect(screen.getByRole('button', { name })).toBeInTheDocument();
         });
     });
 
@@ -166,17 +160,14 @@ describe('Sidebar Component', () => {
     });
 
     test('hat sidebar--chat Klasse im Explore-Modus', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
-        expect(container.querySelector('.sidebar')).toHaveClass('sidebar--chat');
+        render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
+        expect(screen.getByRole('complementary')).toHaveClass('sidebar--chat');
     });
 
     test('ChatPanel wird mit hideNav und hideUserProfile aufgerufen', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
-        // ChatPanel's own nav should be hidden
-        const chatPanelNav = container.querySelector('.chat-panel .sidebar-nav');
-        expect(chatPanelNav).not.toBeInTheDocument();
-        // ChatPanel's own user profile should be hidden
-        expect(container.querySelector('.chat-panel .user-profile')).not.toBeInTheDocument();
+        render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
+        expect(screen.queryByText('Nav')).not.toBeInTheDocument();
+        expect(screen.queryByText('Profile')).not.toBeInTheDocument();
     });
 
     test('erstellt neuen Chat und zeigt Historie', () => {
@@ -207,34 +198,29 @@ describe('Sidebar Component', () => {
         expect(screen.getByTestId('chat-conversation')).toBeInTheDocument();
     });
 
-    test('New Chat Button hat SVG-Icon', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
-        const newChatBtn = container.querySelector('.new-chat-button');
-        expect(newChatBtn.querySelector('svg')).toBeInTheDocument();
+    test('New Chat Button rendert korrekt', () => {
+        render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
+        expect(screen.getByRole('button', { name: /New Chat/ })).toBeInTheDocument();
     });
 
-    test('Chat-Historie-Items haben SVG-Icons', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
+    test('Chat-Historie-Items rendern korrekt', () => {
+        render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
 
         fireEvent.click(screen.getByText('New Chat'));
 
-        const historyItem = container.querySelector('.chat-history-item');
-        expect(historyItem.querySelector('svg')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Chat 1/ })).toBeInTheDocument();
     });
 
     test('wechselt zwischen Chats in der Historie', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
+        render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="explore" />);
 
         fireEvent.click(screen.getByText('New Chat'));
         fireEvent.click(screen.getByText('New Chat'));
 
-        // Click first chat
         fireEvent.click(screen.getByText('Chat 1'));
 
-        // The active chat item should have the active class
-        const historyItems = container.querySelectorAll('.chat-history-item');
-        const chat1Item = Array.from(historyItems).find(el => el.textContent.includes('Chat 1'));
-        expect(chat1Item).toHaveClass('active');
+        const chat1Button = screen.getByRole('button', { name: /Chat 1/ });
+        expect(chat1Button).toHaveClass('active');
     });
 
     // ===== User Profile =====

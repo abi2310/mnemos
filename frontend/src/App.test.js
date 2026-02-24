@@ -2,7 +2,6 @@ import { render, screen, fireEvent, waitFor, act, within } from '@testing-librar
 import App from './App';
 import { getDatasets } from './services/DatasetService/datasetService';
 
-// Mock datasetService
 jest.mock('./services/DatasetService/datasetService', () => ({
     getDatasets: jest.fn(),
     uploadDataset: jest.fn(),
@@ -30,7 +29,6 @@ describe('App Component', () => {
     test('zeigt die Home-Seite mit Logo, Willkommenstext und Quick Guide', () => {
         render(<App />);
 
-        // Two logos: TopBar + Home page
         const logos = screen.getAllByAltText(/Mnemos Logo/i);
         expect(logos.length).toBeGreaterThanOrEqual(2);
         expect(screen.getByText(/Welcome to MNEMOS\./i)).toBeInTheDocument();
@@ -45,30 +43,24 @@ describe('App Component', () => {
     test('versteckt die TopBar-Navigation auf der Startseite', () => {
         render(<App />);
 
-        // Tab-Buttons (Prepare/Explore/Predict) sollten nicht sichtbar sein
-        const prepareTab = screen.queryByRole('button', { name: /^prepare$/i });
-        // The buttons exist in DOM but nav is display:none via CSS
-        // We check that showNav is false by checking the topbar class
-        const topbar = document.querySelector('.topbar');
+        screen.queryByRole('button', { name: /^prepare$/i });
+        const topbar = screen.getByRole('banner');
         expect(topbar).not.toHaveClass('topbar--with-nav');
     });
 
     // ===== Navigation =====
 
-    // Helper: click a sidebar nav item by name
     const clickSidebarNav = (name) => {
-        const sidebar = document.querySelector('.sidebar');
+        const sidebar = screen.getByRole('complementary');
         fireEvent.click(within(sidebar).getByText(name));
     };
 
     test('navigiert zur Projects-Seite über die Sidebar', () => {
         render(<App />);
 
-        // Open sidebar via toggle
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
 
-        // Click Projects in sidebar
         clickSidebarNav('Projects');
 
         expect(screen.getByText('+ New Project')).toBeInTheDocument();
@@ -96,11 +88,9 @@ describe('App Component', () => {
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
 
-        // Navigate to Projects first
         clickSidebarNav('Projects');
         expect(screen.getByText('+ New Project')).toBeInTheDocument();
 
-        // Navigate back to Home
         clickSidebarNav('Home');
         expect(screen.getByText(/Welcome to MNEMOS\./i)).toBeInTheDocument();
     });
@@ -110,18 +100,15 @@ describe('App Component', () => {
     test('öffnet und schließt das New-Project-Modal', () => {
         render(<App />);
 
-        // Navigate to Projects
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
         fireEvent.click(toggleButton);
         clickSidebarNav('Projects');
 
-        // Open modal
         fireEvent.click(screen.getByText('+ New Project'));
         expect(screen.getByText('New Project', { selector: '.modal-title' })).toBeInTheDocument();
         expect(screen.getByPlaceholderText(/Enter project name/i)).toBeInTheDocument();
 
-        // Close modal via ✕ (use the modal-close button specifically)
-        fireEvent.click(document.querySelector('.modal-close'));
+        fireEvent.click(screen.getByRole('button', { name: /Close modal/i }));
         expect(screen.queryByText('New Project', { selector: '.modal-title' })).not.toBeInTheDocument();
     });
 
@@ -164,11 +151,9 @@ describe('App Component', () => {
         fireEvent.change(screen.getByPlaceholderText(/Enter project name/i), { target: { value: 'My Project' } });
         fireEvent.click(screen.getByText('Create Project'));
 
-        // Modal should close
         expect(screen.queryByText('New Project', { selector: '.modal-title' })).not.toBeInTheDocument();
 
-        // TopBar should now show navigation tabs
-        const topbar = document.querySelector('.topbar');
+        const topbar = screen.getByRole('banner');
         expect(topbar).toHaveClass('topbar--with-nav');
     });
 
@@ -184,7 +169,6 @@ describe('App Component', () => {
         fireEvent.change(screen.getByPlaceholderText(/Enter project name/i), { target: { value: 'Test' } });
         fireEvent.click(screen.getByText('Create Project'));
 
-        // Default tab is prepare
         expect(screen.getByText('Prepare', { selector: '.App-title' })).toBeInTheDocument();
         expect(screen.getByText(/Not yet implemented/i)).toBeInTheDocument();
     });
@@ -206,7 +190,7 @@ describe('App Component', () => {
     test('Sidebar erhält App--sidebar-pinned Klasse wenn gepinnt', () => {
         render(<App />);
 
-        const appDiv = document.querySelector('.App');
+        const appDiv = screen.getByTestId('app-root');
         expect(appDiv).not.toHaveClass('App--sidebar-pinned');
 
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
@@ -227,8 +211,7 @@ describe('App Component', () => {
         fireEvent.click(screen.getByText('+ New Project'));
         expect(screen.getByText('New Project', { selector: '.modal-title' })).toBeInTheDocument();
 
-        // Click on the overlay (the modal-overlay div)
-        fireEvent.click(document.querySelector('.modal-overlay'));
+        fireEvent.click(screen.getByTestId('modal-overlay'));
         expect(screen.queryByText('New Project', { selector: '.modal-title' })).not.toBeInTheDocument();
     });
 });

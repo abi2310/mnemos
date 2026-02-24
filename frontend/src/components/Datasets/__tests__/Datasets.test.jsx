@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import Datasets from '../Datasets';
 import { getDatasets } from '../../../services/DatasetService/datasetService';
 
@@ -122,19 +122,15 @@ describe('Datasets Component', () => {
         const nameHeader = screen.getByText(/^Name/);
         fireEvent.click(nameHeader);
 
-        // Get all rows
-        const rows = document.querySelectorAll('.datasets-table-row');
-        const names = Array.from(rows).map(r => r.querySelector('.datasets-table-cell--name span').textContent);
-        expect(names[0]).toBe('analytics_report.xlsx');
-        expect(names[1]).toBe('customer_list.csv');
-        expect(names[2]).toBe('sales_data.csv');
+        const rows = screen.getAllByRole('row');
+        expect(within(rows[1]).getByText('analytics_report.xlsx')).toBeInTheDocument();
+        expect(within(rows[2]).getByText('customer_list.csv')).toBeInTheDocument();
+        expect(within(rows[3]).getByText('sales_data.csv')).toBeInTheDocument();
 
-        // Click again for descending
         fireEvent.click(nameHeader);
-        const rowsDesc = document.querySelectorAll('.datasets-table-row');
-        const namesDesc = Array.from(rowsDesc).map(r => r.querySelector('.datasets-table-cell--name span').textContent);
-        expect(namesDesc[0]).toBe('sales_data.csv');
-        expect(namesDesc[2]).toBe('analytics_report.xlsx');
+        const rowsDesc = screen.getAllByRole('row');
+        expect(within(rowsDesc[1]).getByText('sales_data.csv')).toBeInTheDocument();
+        expect(within(rowsDesc[3]).getByText('analytics_report.xlsx')).toBeInTheDocument();
     });
 
     test('sortiert nach Größe', async () => {
@@ -146,12 +142,11 @@ describe('Datasets Component', () => {
         const sizeHeader = screen.getByText(/^Size/);
         fireEvent.click(sizeHeader);
 
-        const rows = document.querySelectorAll('.datasets-table-row');
-        const names = Array.from(rows).map(r => r.querySelector('.datasets-table-cell--name span').textContent);
+        const rows = screen.getAllByRole('row');
         // Ascending: 256 B < 500 KB < 2 MB
-        expect(names[0]).toBe('analytics_report.xlsx');
-        expect(names[1]).toBe('sales_data.csv');
-        expect(names[2]).toBe('customer_list.csv');
+        expect(within(rows[1]).getByText('analytics_report.xlsx')).toBeInTheDocument();
+        expect(within(rows[2]).getByText('sales_data.csv')).toBeInTheDocument();
+        expect(within(rows[3]).getByText('customer_list.csv')).toBeInTheDocument();
     });
 
     test('sortiert nach Upload-Datum', async () => {
@@ -160,17 +155,14 @@ describe('Datasets Component', () => {
             expect(screen.getByText('sales_data.csv')).toBeInTheDocument();
         });
 
-        // Default sort is created_at desc
-        // Click to switch to asc
         const dateHeader = screen.getByText(/^Upload Date/);
         fireEvent.click(dateHeader);
 
-        const rows = document.querySelectorAll('.datasets-table-row');
-        const names = Array.from(rows).map(r => r.querySelector('.datasets-table-cell--name span').textContent);
+        const rows = screen.getAllByRole('row');
         // Ascending: Dec 2025, Jan 2026, Feb 2026
-        expect(names[0]).toBe('analytics_report.xlsx');
-        expect(names[1]).toBe('sales_data.csv');
-        expect(names[2]).toBe('customer_list.csv');
+        expect(within(rows[1]).getByText('analytics_report.xlsx')).toBeInTheDocument();
+        expect(within(rows[2]).getByText('sales_data.csv')).toBeInTheDocument();
+        expect(within(rows[3]).getByText('customer_list.csv')).toBeInTheDocument();
     });
 
     // ===== Expandable Panels =====
@@ -181,13 +173,11 @@ describe('Datasets Component', () => {
             expect(screen.getByText('sales_data.csv')).toBeInTheDocument();
         });
 
-        // Click Preview button on first dataset
         const previewButtons = screen.getAllByTitle('Preview');
         fireEvent.click(previewButtons[0]);
 
         expect(screen.getByText(/NEEDS TO BE IMPLEMENTED/i)).toBeInTheDocument();
 
-        // Click Close
         fireEvent.click(screen.getByText('Close'));
         expect(screen.queryByText(/NEEDS TO BE IMPLEMENTED/i)).not.toBeInTheDocument();
     });
@@ -203,7 +193,6 @@ describe('Datasets Component', () => {
 
         expect(screen.getByText('Used in Projects', { selector: 'span' })).toBeInTheDocument();
 
-        // Click close
         fireEvent.click(screen.getByLabelText('Close'));
         expect(screen.queryByText('Used in Projects', { selector: 'span' })).not.toBeInTheDocument();
     });
@@ -214,15 +203,12 @@ describe('Datasets Component', () => {
             expect(screen.getByText('sales_data.csv')).toBeInTheDocument();
         });
 
-        // Open preview on first dataset
         const previewButtons = screen.getAllByTitle('Preview');
         fireEvent.click(previewButtons[0]);
         expect(screen.getByText(/NEEDS TO BE IMPLEMENTED/i)).toBeInTheDocument();
 
-        // Open projects on same dataset - should close preview
         const projectButtons = screen.getAllByTitle('Used in Projects');
         fireEvent.click(projectButtons[0]);
-        // Preview should be closed, projects should be open
         expect(screen.queryByText('Close')).not.toBeInTheDocument();
         expect(screen.getByText('Used in Projects', { selector: 'span' })).toBeInTheDocument();
     });
@@ -236,9 +222,8 @@ describe('Datasets Component', () => {
         const previewButtons = screen.getAllByTitle('Preview');
         fireEvent.click(previewButtons[1]); // Click on second dataset
 
-        // Only one preview panel should be open
-        const expandedRows = document.querySelectorAll('.datasets-table-row--expanded');
-        expect(expandedRows).toHaveLength(1);
+        const previews = screen.getAllByText(/NEEDS TO BE IMPLEMENTED/i);
+        expect(previews).toHaveLength(1);
     });
 
     // ===== File Size Formatting =====
@@ -254,4 +239,3 @@ describe('Datasets Component', () => {
         expect(screen.getByText('2.00 MB')).toBeInTheDocument();
     });
 });
-

@@ -88,33 +88,6 @@ function FilesSection({
         });
     };
 
-    // Bulk Delete Handler
-    const handleBulkDelete = async () => {
-        if (selectedIds.length === 0) return;
-        
-        if (!window.confirm(`Delete ${selectedIds.length} file(s)?`)) return;
-
-        try {
-            await onDelete(selectedIds);
-            setSelectedIds([]);
-        } catch (error) {
-            console.error('Bulk delete failed:', error);
-            alert('Failed to delete files. Please try again.');
-        }
-    };
-
-    // Single Delete Handler
-    const handleSingleDelete = async (datasetId) => {
-        if (!window.confirm('Delete this file?')) return;
-
-        try {
-            await onDelete([datasetId]);
-        } catch (error) {
-            console.error('Delete failed:', error);
-            alert('Failed to delete file. Please try again.');
-        }
-    };
-
     // Format file size
     const formatFileSize = (bytes) => {
         if (!bytes) return '—';

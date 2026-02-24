@@ -56,7 +56,7 @@ function App() {
     const showChat = activeProject && activeTab === 'explore';
 
     return (
-        <div className={`App ${sidebarPinned ? 'App--sidebar-pinned' : ''} ${sidebarPinned && showChat ? 'App--sidebar-chat' : ''}`}>
+        <div data-testid="app-root" className={`App ${sidebarPinned ? 'App--sidebar-pinned' : ''} ${sidebarPinned && showChat ? 'App--sidebar-chat' : ''}`}>
             <TopBar
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -160,11 +160,11 @@ function App() {
             </div>
 
             {showNewProject && (
-                <div className="modal-overlay" onClick={() => { setShowNewProject(false); setProjectName(''); setProjectNameError(false); }}>
+                <div data-testid="modal-overlay" className="modal-overlay" onClick={() => { setShowNewProject(false); setProjectName(''); setProjectNameError(false); }}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2 className="modal-title">New Project</h2>
-                            <button className="modal-close" onClick={() => { setShowNewProject(false); setProjectName(''); setProjectNameError(false); }}>✕</button>
+                            <button className="modal-close" aria-label="Close modal" onClick={() => { setShowNewProject(false); setProjectName(''); setProjectNameError(false); }}>✕</button>
                         </div>
                         <div className="modal-body">
                             <label className="modal-label">Project Name</label>
