@@ -17,6 +17,7 @@ def _build_report(context: PipelineContext) -> Dict[str, Any]:
     return {
         "dataset_id": context.get("dataset_id"),
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "pipeline_error": context.get("pipeline_error"),
         "ingestion": context.get("ingestion"),
         "header_detection": context.get("header_detection"),
         "schema_check": context.get("schema_check"),

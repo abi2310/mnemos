@@ -27,6 +27,13 @@ class DataQualityPipeline:
         # Run each step sequentially, allowing handlers to replace the context
         current = context
         for step in self._steps:
+            if current.get("pipeline_error") and step.name != "quality_report":
+                logger.info(
+                    "data_pipeline.skip_step %s (pipeline_error in %s)",
+                    step.name,
+                    current["pipeline_error"].get("step"), # Error Catching
+                )
+                continue
             logger.info("data_pipeline.start_step %s", step.name)
             result = step.handler(current)
             if result is not None:

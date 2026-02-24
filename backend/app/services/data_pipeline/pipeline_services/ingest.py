@@ -98,16 +98,30 @@ def run(context: PipelineContext) -> PipelineContext:
             storage_dir = settings.storage_dir
         storage = StorageService(storage_dir)
 
-    sample_bytes = _read_sample(storage, storage_key)
-    encoding = _sniff_encoding(sample_bytes)
-    sample_text = sample_bytes.decode(encoding, errors="replace")
-    delimiter = _sniff_delimiter(sample_text)
+    try: # Error Catching
+        sample_bytes = _read_sample(storage, storage_key)
+        encoding = _sniff_encoding(sample_bytes)
+        sample_text = sample_bytes.decode(encoding, errors="replace")
+        delimiter = _sniff_delimiter(sample_text)
 
-    df, bad_rows, bad_row_count = _parse_csv(storage, storage_key, encoding, delimiter)
+        df, bad_rows, bad_row_count = _parse_csv(storage, storage_key, encoding, delimiter)
+    except Exception as exc:
+        failed_context = dict(context)
+        failed_context["pipeline_error"] = {
+            "step": "ingestion",
+            "type": exc.__class__.__name__,
+            "message": str(exc),
+        }
+        failed_context["ingestion"] = {
+            "status": "failed",
+            "storage_key": storage_key,
+        }
+        return failed_context
 
     context = dict(context)
     context["dataframe"] = df
     context["ingestion"] = {
+        "status": "ok",
         "encoding": encoding,
         "delimiter": delimiter,
         "bad_row_count": bad_row_count,
