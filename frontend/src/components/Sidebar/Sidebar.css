@@ -30,7 +30,7 @@
 }
 
 /* Navigation */
-.sidebar-nav {
+.sidebar-main-nav {
   padding: 12px 8px;
   display: flex;
   flex-direction: column;
@@ -167,6 +167,6 @@
 }
 
 /* Nav nicht mehr flex:1 wenn Chat sichtbar */
-.sidebar--chat .sidebar-nav {
+.sidebar--chat .sidebar-main-nav {
   flex: none;
 }
