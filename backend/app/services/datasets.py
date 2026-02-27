@@ -150,3 +150,22 @@ class DatasetService:
         )
         return schema
 
+    def get_preview_data(self, dataset_id: str, limit: int = 100) -> list[list]:
+        import json
+        meta = self._store.get(dataset_id)
+        if not meta:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+
+        df = self._load_dataframe(meta)
+        
+        if len(df) > limit:
+            df = df.head(limit)
+            
+        df = df.fillna('?')
+        
+        columns = df.columns.tolist()
+        json_str = df.to_json(orient='values', date_format='iso')
+        records = json.loads(json_str)
+        
+        return [columns] + records
+

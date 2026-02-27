@@ -57,3 +57,13 @@ async def get_dataset_schema(
     ds_svc: DatasetService = Depends(get_dataset_service),
 ):
     return ds_svc.infer_schema(dataset_id)
+
+
+@router.get("/datasets/{dataset_id}/preview", response_model=List[List])
+async def get_dataset_preview(
+    dataset_id: str,
+    limit: int = 100,
+    ds_svc: DatasetService = Depends(get_dataset_service),
+):
+    """Return a preview of the dataset data (columns + top rows)."""
+    return ds_svc.get_preview_data(dataset_id, limit)

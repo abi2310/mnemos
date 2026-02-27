@@ -22,9 +22,18 @@ function DataTablePreview({ data }) {
                     <tbody>
                         {data.slice(1).map((row, rowIndex) => (
                             <tr key={rowIndex}>
-                                {row.map((cell, cellIndex) => (
-                                    <td key={cellIndex}>{cell}</td>
-                                ))}
+                                {row.map((cell, cellIndex) => {
+                                    const isEmpty = cell === '?' || cell === '' || cell === null;
+                                    return (
+                                        <td
+                                            key={cellIndex}
+                                            className={isEmpty ? 'empty-cell' : ''}
+                                            title={!isEmpty ? String(cell) : undefined}
+                                        >
+                                            {!isEmpty ? cell : ''}
+                                        </td>
+                                    );
+                                })}
                             </tr>
                         ))}
                     </tbody>

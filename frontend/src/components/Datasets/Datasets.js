@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getDatasets } from '../../services/DatasetService/datasetService';
+import FilePreviewPanel from '../Prepare/FilePreviewPanel';
 import './Datasets.css';
 
 /**
@@ -297,15 +298,12 @@ function Datasets() {
 
                                         {/* Preview Row */}
                                         {expandedPreview === dataset.dataset_id && (
-                                            <tr className="datasets-table-row--expanded">
+                                            <tr className="datasets-table-row--expanded datasets-table-row--preview">
                                                 <td colSpan="4" className="datasets-table-cell--expanded">
-                                                    <div className="datasets-preview-placeholder">
-                                                        <p>NEEDS TO BE IMPLEMENTED!</p>
-                                                        <button
-                                                            className="datasets-preview-close"
-                                                            onClick={() => setExpandedPreview(null)}
-                                                        >Close</button>
-                                                    </div>
+                                                    <FilePreviewPanel
+                                                        file={dataset}
+                                                        onClose={() => setExpandedPreview(null)}
+                                                    />
                                                 </td>
                                             </tr>
                                         )}

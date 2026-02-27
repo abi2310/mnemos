@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './FilePreviewPanel.css';
+import { getDatasetPreview } from '../../services/DatasetService/datasetService';
+import DataTablePreview from '../DataTablePreview/DataTablePreview';
 
 /**
- * FilePreviewPanel - UI-Skeleton für Datei-Vorschau
+ * FilePreviewPanel - Displays the dataset preview using the API
  * 
  * Zeigt ein expandable Panel unterhalb der Tabelle mit:
  * - Dateiname und Metadaten
@@ -38,9 +40,29 @@ function FilePreviewPanel({ file, onClose }) {
         }
     };
 
-    // Generate skeleton table (8 rows × 6 columns)
-    const skeletonRows = Array.from({ length: 8 }, (_, i) => i);
-    const skeletonCols = Array.from({ length: 6 }, (_, i) => i);
+    const [previewData, setPreviewData] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!file?.dataset_id) return;
+
+        const loadPreview = async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const data = await getDatasetPreview(file.dataset_id, 100);
+                setPreviewData(data);
+            } catch (err) {
+                console.error(err);
+                setError('Failed to load dataset preview.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadPreview();
+    }, [file]);
 
     return (
         <div className="preview-panel" role="region" aria-label="File preview">
@@ -48,18 +70,18 @@ function FilePreviewPanel({ file, onClose }) {
             <div className="preview-header">
                 <div className="preview-header-content">
                     <div className="preview-title-section">
-                        <svg 
-                            className="preview-file-icon" 
-                            width="24" 
-                            height="24" 
-                            viewBox="0 0 24 24" 
+                        <svg
+                            className="preview-file-icon"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
                             fill="none"
                         >
-                            <path 
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
+                            <path
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
                                 strokeLinejoin="round"
                             />
                         </svg>
@@ -84,11 +106,11 @@ function FilePreviewPanel({ file, onClose }) {
                             title="Open in new view (not implemented)"
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path 
-                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
-                                    stroke="currentColor" 
-                                    strokeWidth="2" 
-                                    strokeLinecap="round" 
+                                <path
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
                                     strokeLinejoin="round"
                                 />
                             </svg>
@@ -100,11 +122,11 @@ function FilePreviewPanel({ file, onClose }) {
                             aria-label="Close preview"
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path 
-                                    d="M6 18L18 6M6 6l12 12" 
-                                    stroke="currentColor" 
-                                    strokeWidth="2" 
-                                    strokeLinecap="round" 
+                                <path
+                                    d="M6 18L18 6M6 6l12 12"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
                                     strokeLinejoin="round"
                                 />
                             </svg>
@@ -116,45 +138,15 @@ function FilePreviewPanel({ file, onClose }) {
 
             {/* Content */}
             <div className="preview-content">
-                {/* Info Banner */}
-                <div className="preview-info-banner">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path 
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                            stroke="currentColor" 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round"
-                        />
-                    </svg>
-                    <p>Preview will be implemented later. This is a placeholder UI.</p>
-                </div>
-
-                {/* Skeleton Table */}
-                <div className="preview-table-wrapper">
-                    <table className="preview-table">
-                        <thead>
-                            <tr>
-                                {skeletonCols.map((col) => (
-                                    <th key={col} className="preview-table-header">
-                                        <div className="skeleton-text skeleton-text--header"></div>
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {skeletonRows.map((row) => (
-                                <tr key={row}>
-                                    {skeletonCols.map((col) => (
-                                        <td key={col} className="preview-table-cell">
-                                            <div className="skeleton-text"></div>
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {isLoading ? (
+                    <div className="preview-loading">Loading preview...</div>
+                ) : error ? (
+                    <div className="preview-error">{error}</div>
+                ) : previewData.length > 0 ? (
+                    <DataTablePreview data={previewData} />
+                ) : (
+                    <div className="preview-empty">No data available for preview.</div>
+                )}
             </div>
         </div>
     );

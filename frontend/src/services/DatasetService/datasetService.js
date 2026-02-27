@@ -35,3 +35,11 @@ export async function getDatasetSchema(id) {
     const response = await fetch(`${API_BASE_URL}/datasets/${id}/schema`);
     return response.json();
 }
+
+export async function getDatasetPreview(id, limit = 100) {
+    const response = await fetch(`${API_BASE_URL}/datasets/${id}/preview?limit=${limit}`);
+    if (!response.ok) {
+        throw new Error('Failed to load dataset preview');
+    }
+    return response.json();
+}
