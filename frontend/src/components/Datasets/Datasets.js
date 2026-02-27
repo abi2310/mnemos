@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getDatasets } from '../../services/DatasetService/datasetService';
+import { getDatasets, deleteDataset } from '../../services/DatasetService/datasetService';
 import FilePreviewPanel from '../Prepare/FilePreviewPanel';
 import './Datasets.css';
 
@@ -107,6 +107,24 @@ function Datasets() {
     const toggleProjects = (datasetId) => {
         setExpandedProjects(prev => prev === datasetId ? null : datasetId);
         setExpandedPreview(null);
+    };
+
+    const handleDelete = async (datasetId) => {
+        if (!window.confirm('Are you sure you want to delete this dataset? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            await deleteDataset(datasetId);
+            // Refresh list
+            await loadDatasets();
+            // Close preview/projects if they were open for this item
+            if (expandedPreview === datasetId) setExpandedPreview(null);
+            if (expandedProjects === datasetId) setExpandedProjects(null);
+        } catch (error) {
+            console.error('Failed to delete dataset:', error);
+            alert('Failed to delete the dataset.');
+        }
     };
 
     return (
@@ -261,6 +279,22 @@ function Datasets() {
                                                             />
                                                         </svg>
                                                         Preview
+                                                    </button>
+                                                    <button
+                                                        className="datasets-row-action-btn datasets-row-action-btn--danger"
+                                                        onClick={() => handleDelete(dataset.dataset_id)}
+                                                        title="Delete Dataset"
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                            <path
+                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                                stroke="currentColor"
+                                                                strokeWidth="2"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            />
+                                                        </svg>
+                                                        Delete
                                                     </button>
                                                 </div>
                                             </td>

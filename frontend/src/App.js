@@ -84,12 +84,7 @@ function App() {
                     {activeProject ? (
                         <>
                             {activeTab === 'prepare' && (
-                                <div className="App-content">
-                                    <h1 className="App-title">Prepare</h1>
-                                    <p className="App-subtitle" style={{ color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>
-                                        Here you will be able to view your datasets in table form, edit values, check column types, handle missing data, and transform your files for analysis. — Not yet implemented.
-                                    </p>
-                                </div>
+                                <Prepare />
                             )}
 
                             {activeTab === 'explore' && (

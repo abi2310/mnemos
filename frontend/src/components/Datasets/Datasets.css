@@ -186,6 +186,11 @@
     border-color: var(--color-accent);
 }
 
+.datasets-row-action-btn--danger:hover {
+    background-color: var(--color-error);
+    border-color: var(--color-error);
+}
+
 .datasets-row-action-btn svg {
     width: 14px;
     height: 14px;

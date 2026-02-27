@@ -169,8 +169,8 @@ describe('App Component', () => {
         fireEvent.change(screen.getByPlaceholderText(/Enter project name/i), { target: { value: 'Test' } });
         fireEvent.click(screen.getByText('Create Project'));
 
-        expect(screen.getByText('Prepare', { selector: '.App-title' })).toBeInTheDocument();
-        expect(screen.getByText(/Not yet implemented/i)).toBeInTheDocument();
+        expect(screen.getByText(/Drag files to upload or/i)).toBeInTheDocument();
+        expect(screen.queryByText(/Not yet implemented/i)).not.toBeInTheDocument();
     });
 
     // ===== Sidebar Toggle =====
