@@ -12,6 +12,7 @@ function App() {
     const [sidebarHovered, setSidebarHovered] = useState(false);
     const [activePage, setActivePage] = useState('home');
     const [showNewProject, setShowNewProject] = useState(false);
+    const [projects, setProjects] = useState([]);
     const [activeProject, setActiveProject] = useState(null);
     const [projectName, setProjectName] = useState('');
     const [projectNameError, setProjectNameError] = useState(false);
@@ -23,11 +24,34 @@ function App() {
             setProjectNameError(true);
             return;
         }
-        setActiveProject({ name: projectName.trim() });
+        const newProject = { name: projectName.trim(), id: Date.now(), createdAt: new Date().toISOString() };
+        setProjects([...projects, newProject]);
+        setActiveProject(newProject);
         setShowNewProject(false);
         setProjectName('');
         setProjectNameError(false);
         setActiveTab('prepare');
+    };
+
+    const handleDeleteProject = (e, id) => {
+        e.stopPropagation();
+        if (window.confirm('Are you sure you want to delete this project?')) {
+            setProjects(prev => prev.filter(p => p.id !== id));
+            if (activeProject && activeProject.id === id) {
+                setActiveProject(null);
+            }
+        }
+    };
+
+    const handleRenameProject = (e, id, currentName) => {
+        e.stopPropagation();
+        const newName = window.prompt('Enter new project name:', currentName);
+        if (newName && newName.trim() && newName.trim() !== currentName) {
+            setProjects(prev => prev.map(p => p.id === id ? { ...p, name: newName.trim() } : p));
+            if (activeProject && activeProject.id === id) {
+                setActiveProject(prev => ({ ...prev, name: newName.trim() }));
+            }
+        }
     };
 
     const handleSidebarToggle = useCallback(() => {
@@ -84,7 +108,7 @@ function App() {
                     {activeProject ? (
                         <>
                             {activeTab === 'prepare' && (
-                                <Prepare />
+                                <Prepare hideUpload={true} />
                             )}
 
                             {activeTab === 'explore' && (
@@ -140,9 +164,83 @@ function App() {
                                         <h1 className="App-title">Projects</h1>
                                         <button className="App-btn-primary" onClick={() => setShowNewProject(true)}>+ New Project</button>
                                     </div>
-                                    <p className="App-subtitle" style={{ color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>
-                                        Existing projects will be displayed here. — Not yet implemented.
-                                    </p>
+                                    {projects.length === 0 ? (
+                                        <p className="App-subtitle" style={{ color: 'var(--color-text-tertiary)', fontStyle: 'italic', marginTop: 'var(--spacing-4)' }}>
+                                            No projects created yet. Click "+ New Project" to get started.
+                                        </p>
+                                    ) : (
+                                        <div className="projects-list" style={{
+                                            display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)', marginTop: 'var(--spacing-6)'
+                                        }}>
+                                            {projects.map(proj => (
+                                                <div
+                                                    key={proj.id}
+                                                    className="project-list-item"
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        padding: 'var(--spacing-3) var(--spacing-4)',
+                                                        backgroundColor: 'var(--color-bg-secondary)',
+                                                        border: '1px solid var(--color-border-medium)',
+                                                        borderRadius: 'var(--radius-base)',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                    onClick={() => {
+                                                        setActiveProject(proj);
+                                                        setActiveTab('prepare');
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.borderColor = 'var(--color-accent)';
+                                                        e.currentTarget.style.backgroundColor = 'var(--color-bg-tertiary)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.borderColor = 'var(--color-border-medium)';
+                                                        e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)';
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--color-accent)' }}>
+                                                            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+                                                        <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-primary)' }}>{proj.name}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-4)' }}>
+                                                        <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                                                            Created: {new Date(proj.createdAt || proj.id).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                        </span>
+                                                        <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
+                                                            <button
+                                                                onClick={(e) => handleRenameProject(e, proj.id, proj.name)}
+                                                                style={{
+                                                                    padding: '4px 8px', fontSize: '12px', cursor: 'pointer', backgroundColor: 'transparent',
+                                                                    border: '1px solid var(--color-border-medium)', borderRadius: '4px', color: 'var(--color-text-primary)',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                                onMouseOver={(e) => { e.target.style.borderColor = 'var(--color-accent)'; e.target.style.color = 'var(--color-accent)'; }}
+                                                                onMouseOut={(e) => { e.target.style.borderColor = 'var(--color-border-medium)'; e.target.style.color = 'var(--color-text-primary)'; }}
+                                                            >
+                                                                Rename
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => handleDeleteProject(e, proj.id)}
+                                                                style={{
+                                                                    padding: '4px 8px', fontSize: '12px', cursor: 'pointer', backgroundColor: 'transparent',
+                                                                    border: '1px solid var(--color-border-medium)', borderRadius: '4px', color: 'var(--color-text-primary)',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                                onMouseOver={(e) => { e.target.style.backgroundColor = 'var(--color-error)'; e.target.style.borderColor = 'var(--color-error)'; e.target.style.color = 'white'; }}
+                                                                onMouseOut={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.borderColor = 'var(--color-border-medium)'; e.target.style.color = 'var(--color-text-primary)'; }}
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </>
                             )}
 

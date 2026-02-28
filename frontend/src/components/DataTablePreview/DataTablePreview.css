@@ -92,3 +92,15 @@
         font-size: var(--font-size-xs);
     }
 }
+
+/* Editable Cell Styling */
+.editable-cell {
+    outline: none;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    cursor: text;
+}
+
+.editable-cell:focus {
+    background-color: var(--color-bg-primary) !important;
+    box-shadow: inset 0 0 0 2px var(--color-accent);
+}

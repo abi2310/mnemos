@@ -64,7 +64,7 @@ describe('App Component', () => {
         clickSidebarNav('Projects');
 
         expect(screen.getByText('+ New Project')).toBeInTheDocument();
-        expect(screen.getByText(/Existing projects will be displayed here/i)).toBeInTheDocument();
+        expect(screen.getByText(/No projects created yet/i)).toBeInTheDocument();
     });
 
     test('navigiert zur Datasets-Seite über die Sidebar', async () => {
@@ -169,7 +169,7 @@ describe('App Component', () => {
         fireEvent.change(screen.getByPlaceholderText(/Enter project name/i), { target: { value: 'Test' } });
         fireEvent.click(screen.getByText('Create Project'));
 
-        expect(screen.getByText(/Drag files to upload or/i)).toBeInTheDocument();
+        expect(screen.getByText(/Upload a dataset to start wrangling data/i)).toBeInTheDocument();
         expect(screen.queryByText(/Not yet implemented/i)).not.toBeInTheDocument();
     });
 
