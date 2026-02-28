@@ -42,17 +42,116 @@
     text-align: left;
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-secondary);
-    border-bottom: 2px solid var(--color-border-medium);
+    border-bottom: 1px solid var(--color-border-medium);
     border-right: 1px solid var(--color-border-light);
     white-space: nowrap;
 }
 
+.header-cell-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.header-title-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.role-badge {
+    font-size: 9px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+
+.role-badge.role-label {
+    background-color: var(--color-success, #2e7d32);
+}
+
+.role-badge.role-id {
+    background-color: var(--color-info, #1565c0);
+}
+
+.role-badge.role-weight {
+    background-color: var(--color-warning, #e65100);
+}
+
+.role-dropdown-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--color-text-tertiary);
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.role-dropdown-wrapper:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.role-select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
 /* Sticky Header */
-.data-preview-table thead th {
+.data-preview-table thead tr:first-child th {
     position: sticky;
     top: 0;
+    height: 40px;
+    /* Exact height for gapless snapping */
+    box-sizing: border-box;
     z-index: 2;
     background-color: var(--color-bg-tertiary);
+}
+
+.data-preview-table thead .data-preview-table-types th {
+    position: sticky;
+    top: 39px;
+    /* 40px minus 1px to cover any border gap overlap */
+    z-index: 2;
+    background-color: var(--color-bg-tertiary);
+    border-bottom: 2px solid var(--color-border-medium);
+    padding: var(--spacing-1) var(--spacing-4);
+    font-weight: normal;
+}
+
+.type-select {
+    background-color: transparent;
+    border: none;
+    color: var(--color-accent);
+    font-family: var(--font-mono, monospace);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    font-weight: var(--font-weight-medium);
+    padding: 0;
+    outline: none;
+}
+
+.type-select:hover {
+    filter: brightness(1.2);
+}
+
+.type-select option {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
 }
 
 /* Body */

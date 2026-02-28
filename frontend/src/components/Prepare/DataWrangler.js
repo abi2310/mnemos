@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getDatasetPreview } from '../../services/DatasetService/datasetService';
+import { getDatasetPreview, updateDataset } from '../../services/DatasetService/datasetService';
 import DataTablePreview from '../DataTablePreview/DataTablePreview';
+import { convertDataToCSV } from './DataTypeUtils';
 import './DataWrangler.css';
 
 function DataWrangler({ datasets }) {
@@ -34,9 +35,30 @@ function DataWrangler({ datasets }) {
                 setIsLoading(false);
             }
         };
-
         loadPreview();
     }, [selectedDatasetId]);
+
+    const handleCellChange = async (rowIndex, colIndex, newValue) => {
+        try {
+            // Updated local state
+            const newData = [...previewData];
+            const newRow = [...newData[rowIndex + 1]];
+            newRow[colIndex] = newValue;
+            newData[rowIndex + 1] = newRow;
+            setPreviewData(newData);
+
+            // Convert and save entire file using generic PUT
+            const csvString = convertDataToCSV(newData);
+            const selectedDataset = datasets.find(d => d.dataset_id === selectedDatasetId);
+            const originalName = selectedDataset?.original_name || 'dataset.csv';
+
+            const file = new File([csvString], originalName, { type: 'text/csv' });
+            await updateDataset(selectedDatasetId, file);
+        } catch (err) {
+            console.error("Failed to update cell backend:", err);
+            setError("Failed to save changes visually. Try again.");
+        }
+    };
 
     if (!datasets || datasets.length === 0) {
         return (
@@ -87,7 +109,10 @@ function DataWrangler({ datasets }) {
                 ) : (
                     <div className="wrangler-table-area">
                         {previewData.length > 0 ? (
-                            <DataTablePreview data={previewData} />
+                            <DataTablePreview
+                                data={previewData}
+                                onCellChange={handleCellChange}
+                            />
                         ) : (
                             <div className="wrangler-empty-state">No data rows found.</div>
                         )}

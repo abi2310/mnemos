@@ -43,3 +43,20 @@ export async function getDatasetPreview(id, limit = 100) {
     }
     return response.json();
 }
+
+export async function updateDataset(id, file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/datasets/${id}`, {
+        method: 'PUT',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Dataset update failed: ${text}`);
+    }
+
+    return await response.json();
+}
