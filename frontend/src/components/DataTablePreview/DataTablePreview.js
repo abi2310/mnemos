@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './DataTablePreview.css';
 import { RapidMinerTypes, inferColumnTypes } from '../Prepare/DataTypeUtils';
 
-function DataTablePreview({ data, onCellChange }) {
+function DataTablePreview({ data, onCellChange, datasetId }) {
     const [localData, setLocalData] = useState([]);
     const [columnTypes, setColumnTypes] = useState([]);
     const [columnRoles, setColumnRoles] = useState([]);
@@ -10,11 +10,32 @@ function DataTablePreview({ data, onCellChange }) {
     useEffect(() => {
         setLocalData(data || []);
         if (data && data.length > 0) {
-            setColumnTypes(inferColumnTypes(data));
-            // Keep existing roles if the number of columns stays exactly the same
-            setColumnRoles(prev => prev.length === data[0].length ? prev : new Array(data[0].length).fill('regular'));
+            let loadedTypes = null;
+            let loadedRoles = null;
+
+            if (datasetId) {
+                const savedMeta = localStorage.getItem(`dataset_meta_${datasetId}`);
+                if (savedMeta) {
+                    try {
+                        const parsed = JSON.parse(savedMeta);
+                        if (parsed.types && parsed.types.length === data[0].length) {
+                            loadedTypes = parsed.types;
+                        }
+                        if (parsed.roles && parsed.roles.length === data[0].length) {
+                            loadedRoles = parsed.roles;
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse saved dataset metadata');
+                    }
+                }
+            }
+
+            setColumnTypes(loadedTypes || inferColumnTypes(data));
+            setColumnRoles(loadedRoles || new Array(data[0].length).fill('regular'));
         }
-    }, [data]);
+    }, [data, datasetId]);
+
+
 
     if (!localData || localData.length === 0) return null;
 
@@ -36,6 +57,12 @@ function DataTablePreview({ data, onCellChange }) {
         setColumnTypes(prev => {
             const next = [...prev];
             next[colIndex] = newType;
+            if (datasetId) {
+                localStorage.setItem(`dataset_meta_${datasetId}`, JSON.stringify({
+                    types: next,
+                    roles: columnRoles
+                }));
+            }
             return next;
         });
     };
@@ -44,6 +71,12 @@ function DataTablePreview({ data, onCellChange }) {
         setColumnRoles(prev => {
             const next = [...prev];
             next[colIndex] = newRole;
+            if (datasetId) {
+                localStorage.setItem(`dataset_meta_${datasetId}`, JSON.stringify({
+                    types: columnTypes,
+                    roles: next
+                }));
+            }
             return next;
         });
     };

@@ -111,6 +111,7 @@ function DataWrangler({ datasets }) {
                         {previewData.length > 0 ? (
                             <DataTablePreview
                                 data={previewData}
+                                datasetId={selectedDatasetId}
                                 onCellChange={handleCellChange}
                             />
                         ) : (
