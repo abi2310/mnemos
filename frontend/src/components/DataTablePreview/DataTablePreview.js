@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './DataTablePreview.css';
-import { RapidMinerTypes, inferColumnTypes } from '../Prepare/DataTypeUtils';
+import { inferColumnTypes } from '../Prepare/DataTypeUtils';
 
 function DataTablePreview({ data, onCellChange, datasetId }) {
     const [localData, setLocalData] = useState([]);
@@ -98,22 +98,6 @@ function DataTablePreview({ data, onCellChange, datasetId }) {
                 return 'type-default';
         }
     };
-
-    const getTypeLabel = (type) => {
-        switch (type) {
-            case 'polynominal':
-            case 'binominal':
-                return 'Category';
-            case 'integer':
-                return 'Number (Integer)';
-            case 'real':
-            case 'numeric':
-                return 'Number (Real)';
-            default:
-                return type;
-        }
-    };
-
     const renderVisualization = (colIndex, type) => {
         const typeClass = getTypeClass(type);
         const colData = localData.slice(1).map(row => row[colIndex]).filter(val => val !== null && val !== '' && val !== '?');
@@ -225,18 +209,21 @@ function DataTablePreview({ data, onCellChange, datasetId }) {
                             {columnTypes.map((type, index) => (
                                 <th key={`type-${index}`} className="type-cell">
                                     <div className={`type-select-wrapper ${getTypeClass(type)}`}>
-                                        <span className="type-label">{getTypeLabel(type)}</span>
                                         <select
-                                            className="type-select"
+                                            className="type-select-visible"
                                             value={type}
                                             onChange={(e) => handleTypeChange(index, e.target.value)}
                                             title="Change data type"
                                         >
-                                            {RapidMinerTypes.map(rt => (
-                                                <option key={rt} value={rt}>{rt}</option>
-                                            ))}
+                                            <option value="polynominal">Category</option>
+                                            <option value="binominal">Category (Binary)</option>
+                                            <option value="integer">Number (Integer)</option>
+                                            <option value="real">Number (Real)</option>
+                                            <option value="date_time">Date & Time</option>
+                                            <option value="date">Date</option>
+                                            <option value="time">Time</option>
                                         </select>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '4px', opacity: 0.6 }}><path d="M6 9l6 6 6-6" /></svg>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '8px', opacity: 0.6, pointerEvents: 'none' }}><path d="M6 9l6 6 6-6" /></svg>
                                     </div>
                                 </th>
                             ))}
