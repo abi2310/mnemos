@@ -4,8 +4,8 @@
     height: 100%;
     width: 100%;
     background-color: var(--color-bg-primary);
-    border: 1px solid var(--color-border-medium);
-    border-radius: var(--radius-lg);
+    border: none;
+    border-radius: 0;
     overflow: hidden;
     position: relative;
 }
@@ -15,16 +15,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-2) var(--spacing-4);
+    padding: 0 var(--spacing-4);
     background-color: var(--color-bg-tertiary);
     border-bottom: 1px solid var(--color-border-medium);
-    height: 56px;
+    height: 48px;
 }
 
 .wrangler-toolbar-left {
     display: flex;
-    align-items: center;
-    gap: var(--spacing-3);
+    align-items: flex-end;
+    /* Align tabs to bottom */
+    height: 100%;
 }
 
 .wrangler-toolbar-right {
@@ -33,17 +34,64 @@
     gap: var(--spacing-3);
 }
 
-.wrangler-dataset-select {
-    padding: var(--spacing-1) var(--spacing-2);
-    border-radius: var(--radius-base);
-    background-color: var(--color-bg-secondary);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border-light);
-    font-size: var(--font-size-sm);
-    min-width: 150px;
+.wrangler-dataset-tabs {
+    display: flex;
+    gap: 4px;
+    height: 100%;
+    margin-bottom: -1px;
+    /* Overlap border-bottom of toolbar */
 }
 
+.wrangler-tab {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    padding: 0 16px;
+    height: 100%;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    transition: background-color 0.2s, color 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+}
 
+.wrangler-tab:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.wrangler-tab.active {
+    background-color: var(--color-bg-primary);
+    color: var(--color-accent);
+    border-color: var(--color-border-medium);
+    border-bottom-color: var(--color-bg-primary);
+}
+
+.wrangler-tab.active svg {
+    color: var(--color-accent);
+    opacity: 1 !important;
+}
+
+.wrangler-tab-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    padding: 2px;
+    border-radius: 4px;
+    color: var(--color-text-tertiary);
+    transition: all 0.2s;
+}
+
+.wrangler-tab-close:hover {
+    background-color: var(--color-error);
+    color: #ffffff;
+}
 
 .wrangler-action-btn {
     padding: var(--spacing-2) var(--spacing-4);
@@ -99,6 +147,7 @@
 .wrangler-table-area .data-preview-table-wrapper {
     flex: 1;
     border-radius: 0;
+    border: none;
     max-height: none;
 }
 
@@ -145,8 +194,8 @@
     height: 100%;
     width: 100%;
     background-color: var(--color-bg-primary);
-    border: 1px solid var(--color-border-medium);
-    border-radius: var(--radius-lg);
+    border: none;
+    border-radius: 0;
 }
 
 .wrangler-empty-content {

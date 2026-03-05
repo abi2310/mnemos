@@ -4,7 +4,7 @@ import DataTablePreview from '../DataTablePreview/DataTablePreview';
 import { convertDataToCSV } from './DataTypeUtils';
 import './DataWrangler.css';
 
-function DataWrangler({ datasets }) {
+function DataWrangler({ datasets, onRemoveDataset }) {
     const [selectedDatasetId, setSelectedDatasetId] = useState('');
     const [previewData, setPreviewData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -79,18 +79,36 @@ function DataWrangler({ datasets }) {
             {/* Top Toolbar */}
             <div className="wrangler-toolbar">
                 <div className="wrangler-toolbar-left">
-                    <select
-                        className="wrangler-dataset-select"
-                        value={selectedDatasetId || ''}
-                        onChange={(e) => setSelectedDatasetId(e.target.value)}
-                    >
-                        <option value="" disabled>Select Dataset</option>
+                    <div className="wrangler-dataset-tabs">
                         {datasets.map(d => (
-                            <option key={d.dataset_id} value={d.dataset_id}>
+                            <button
+                                key={d.dataset_id}
+                                className={`wrangler-tab ${selectedDatasetId === d.dataset_id ? 'active' : ''}`}
+                                onClick={() => setSelectedDatasetId(d.dataset_id)}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', opacity: 0.7 }}>
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
                                 {d.original_name || `Dataset ${d.dataset_id}`}
-                            </option>
+                                {onRemoveDataset && (
+                                    <span
+                                        className="wrangler-tab-close"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRemoveDataset(d.dataset_id);
+                                        }}
+                                        title="Remove dataset"
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </span>
+                                )}
+                            </button>
                         ))}
-                    </select>
+                    </div>
                 </div>
                 <div className="wrangler-toolbar-right">
                     <button className="wrangler-action-btn primary">Export Code</button>

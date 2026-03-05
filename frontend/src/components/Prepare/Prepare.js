@@ -82,8 +82,8 @@ function Prepare({ hideUpload }) {
     return (
         <div className="prepare-container">
             {hideUpload ? (
-                <div style={{ flex: 1, padding: 'var(--spacing-6)', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
-                    <DataWrangler datasets={datasets} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
+                    <DataWrangler datasets={datasets} onRemoveDataset={(id) => handleDelete([id])} />
                 </div>
             ) : (
                 <div className="prepare-content">

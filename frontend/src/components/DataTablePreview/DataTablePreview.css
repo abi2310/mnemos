@@ -27,38 +27,54 @@
 .data-preview-table {
     width: max-content;
     min-width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: var(--font-size-sm);
-    font-family: var(--font-mono, monospace);
+    font-family: var(--font-family-primary);
+    color: var(--color-text-primary);
 }
 
 /* Header */
 .data-preview-table thead {
-    background-color: var(--color-bg-tertiary);
+    background-color: var(--color-bg-primary);
 }
 
 .data-preview-table th {
-    padding: var(--spacing-2) var(--spacing-4);
     text-align: left;
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-secondary);
-    border-bottom: 1px solid var(--color-border-medium);
-    border-right: 1px solid var(--color-border-light);
     white-space: nowrap;
+}
+
+/* Header names row */
+.data-preview-table thead tr.header-title-row th {
+    position: sticky;
+    top: 0;
+    height: 48px;
+    z-index: 10;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-bold);
+    border-bottom: 2px solid var(--color-bg-primary);
+    border-right: 2px solid var(--color-bg-primary);
+    padding: 0 16px;
+    box-sizing: border-box;
 }
 
 .header-cell-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: var(--spacing-3);
+    gap: 16px;
+    width: 100%;
 }
 
 .header-title-wrapper {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-title {
+    font-size: var(--font-size-sm);
 }
 
 .role-badge {
@@ -72,15 +88,15 @@
 }
 
 .role-badge.role-label {
-    background-color: var(--color-success, #2e7d32);
+    background-color: var(--color-success);
 }
 
 .role-badge.role-id {
-    background-color: var(--color-info, #1565c0);
+    background-color: var(--color-info);
 }
 
 .role-badge.role-weight {
-    background-color: var(--color-warning, #e65100);
+    background-color: var(--color-warning);
 }
 
 .role-dropdown-wrapper {
@@ -88,8 +104,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    gap: 4px;
+    min-width: 20px;
+    height: 24px;
+    padding: 0 4px;
     border-radius: 4px;
     cursor: pointer;
     color: var(--color-text-tertiary);
@@ -97,7 +115,7 @@
 }
 
 .role-dropdown-wrapper:hover {
-    background-color: var(--color-bg-secondary);
+    background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
 }
 
@@ -111,42 +129,59 @@
     cursor: pointer;
 }
 
-/* Sticky Header */
-.data-preview-table thead tr:first-child th {
+/* Type Row */
+.data-preview-table thead tr.data-preview-table-types th {
     position: sticky;
-    top: 0;
-    height: 40px;
-    /* Exact height for gapless snapping */
-    box-sizing: border-box;
-    z-index: 2;
-    background-color: var(--color-bg-tertiary);
-}
-
-.data-preview-table thead .data-preview-table-types th {
-    position: sticky;
-    top: 39px;
-    /* 40px minus 1px to cover any border gap overlap */
-    z-index: 2;
-    background-color: var(--color-bg-tertiary);
-    border-bottom: 2px solid var(--color-border-medium);
-    padding: var(--spacing-1) var(--spacing-4);
+    top: 48px;
+    z-index: 9;
+    background-color: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border-medium);
+    padding: 12px 16px;
     font-weight: normal;
 }
 
-.type-select {
-    background-color: transparent;
-    border: none;
-    color: var(--color-accent);
-    font-family: var(--font-mono, monospace);
+.type-select-wrapper {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--radius-base);
     font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    position: relative;
     cursor: pointer;
-    font-weight: var(--font-weight-medium);
-    padding: 0;
-    outline: none;
 }
 
-.type-select:hover {
-    filter: brightness(1.2);
+.type-select-wrapper.type-category {
+    background-color: rgba(245, 158, 11, 0.15);
+    /* warning color base */
+    color: var(--color-warning);
+}
+
+.type-select-wrapper.type-number {
+    background-color: rgba(16, 185, 129, 0.15);
+    /* success color base */
+    color: var(--color-success);
+}
+
+.type-select-wrapper.type-date {
+    background-color: rgba(59, 130, 246, 0.15);
+    /* info color base */
+    color: var(--color-info);
+}
+
+.type-select-wrapper.type-default {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-secondary);
+}
+
+.type-select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
 }
 
 .type-select option {
@@ -154,42 +189,129 @@
     color: var(--color-text-primary);
 }
 
+/* Viz Row */
+.data-preview-table thead tr.data-preview-table-viz th {
+    position: sticky;
+    top: 96px;
+    z-index: 8;
+    background-color: var(--color-bg-primary);
+    border-bottom: 1px solid var(--color-border-medium);
+    padding: 12px 16px;
+    height: 100px;
+    vertical-align: top;
+}
+
+/* Visualization Styles */
+.viz-bars-container {
+    display: flex;
+    flex-direction: column;
+    height: 80px;
+    width: 200px;
+}
+
+.viz-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    flex: 1;
+}
+
+.viz-bar-wrapper {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.viz-bar {
+    width: 100%;
+    background-color: var(--color-accent);
+    border-radius: 2px 2px 0 0;
+}
+
+.viz-bars-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--color-text-tertiary);
+    margin-top: 4px;
+}
+
+.viz-cat-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    height: 80px;
+    width: 200px;
+}
+
+.viz-cat-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.viz-cat-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.viz-cat-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.viz-cat-progress-bg {
+    width: 100%;
+    height: 8px;
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.viz-cat-progress-fill {
+    height: 100%;
+    background-color: var(--color-accent);
+    border-radius: var(--radius-sm);
+}
+
+.viz-empty {
+    color: var(--color-text-disabled);
+    font-size: var(--font-size-xs);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
 /* Body */
 .data-preview-table td {
-    padding: var(--spacing-2) var(--spacing-4);
-    text-align: left;
-    color: var(--color-text-primary);
+    padding: 12px 16px;
+    color: var(--color-text-secondary);
     border-bottom: 1px solid var(--color-border-light);
-    border-right: 1px solid var(--color-border-light);
     white-space: nowrap;
     max-width: 300px;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-/* Zebra Rows */
-.data-preview-table tbody tr:nth-child(even) {
-    background-color: var(--color-bg-secondary);
+    background-color: var(--color-bg-primary);
 }
 
 /* Hover */
 .data-preview-table tbody tr:hover td {
-    background-color: var(--color-bg-tertiary);
+    background-color: var(--color-bg-secondary);
 }
 
 /* Empty Cell styling */
 .data-preview-table td:empty::after,
 .data-preview-table td.empty-cell {
-    content: "?";
-    color: var(--color-text-tertiary);
+    content: "null";
+    color: var(--color-text-disabled);
     font-style: italic;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .data-preview-table {
-        font-size: var(--font-size-xs);
-    }
 }
 
 /* Editable Cell Styling */
@@ -200,6 +322,26 @@
 }
 
 .editable-cell:focus {
-    background-color: var(--color-bg-primary) !important;
+    background-color: var(--color-bg-tertiary) !important;
     box-shadow: inset 0 0 0 2px var(--color-accent);
+    border-radius: 2px;
+}
+
+/* Scrollbar customization for webkit */
+.data-preview-table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.data-preview-table-wrapper::-webkit-scrollbar-track {
+    background: var(--color-bg-secondary);
+}
+
+.data-preview-table-wrapper::-webkit-scrollbar-thumb {
+    background: var(--color-border-medium);
+    border-radius: var(--radius-base);
+}
+
+.data-preview-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-dark);
 }

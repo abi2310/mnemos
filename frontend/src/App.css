@@ -14,11 +14,11 @@
 }
 
 /* Nur App-body verschiebt sich wenn Sidebar gepinnt */
-.App--sidebar-pinned > .App-body {
+.App--sidebar-pinned>.App-body {
   margin-left: 240px;
 }
 
-.App--sidebar-chat > .App-body {
+.App--sidebar-chat>.App-body {
   margin-left: 400px;
 }
 
@@ -32,7 +32,8 @@
 }
 
 /* Explore-Tab ohne Padding für fullscreen Layout */
-.App-main:has(.explore-container) {
+.App-main:has(.explore-container),
+.App-main:has(.data-wrangler-container) {
   padding: 0;
 }
 
