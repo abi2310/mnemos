@@ -56,6 +56,7 @@ def test_invalid_extension_returns_400(client):
     files = {"file": ("data.exe", b"mal", "application/octet-stream")}
     resp = client.post("/api/v1/datasets", files=files)
     assert resp.status_code == 400
+    
 def test_list_and_get_endpoints(client):
     # upload two datasets
     resp1 = client.post("/api/v1/datasets", files={"file": ("a.csv", "x\n", "text/csv")})
@@ -91,6 +92,18 @@ def test_schema_endpoint(client):
     assert body["row_count"] == 2
     assert len(body["columns"]) == 2
 
+
+def test_quality_report_endpoint(client):
+    resp = client.post("/api/v1/datasets", files={"file": ("r.csv", "a,b\n1,2\n", "text/csv")})
+    assert resp.status_code == 201
+    d = resp.json()
+
+    report_resp = client.get(f"/api/v1/datasets/{d['dataset_id']}/quality-report")
+    assert report_resp.status_code == 200
+    body = report_resp.json()
+    assert body["dataset_id"] == d["dataset_id"]
+    assert "ingestion" in body
+    assert "header_detection" in body
 
 def test_update_dataset_name(client):
     # upload
