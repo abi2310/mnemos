@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './DataTablePreview.css';
 import { inferColumnTypes } from '../Prepare/DataTypeUtils';
+import { getQualityReport } from '../../services/DatasetService/datasetService';
 
 function DataTablePreview({ data, onCellChange, datasetId }) {
     const [localData, setLocalData] = useState([]);
     const [columnTypes, setColumnTypes] = useState([]);
     const [columnRoles, setColumnRoles] = useState([]);
+    const [qualityReport, setQualityReport] = useState(null);
 
     useEffect(() => {
         setLocalData(data || []);
@@ -28,6 +30,10 @@ function DataTablePreview({ data, onCellChange, datasetId }) {
                         console.error('Failed to parse saved dataset metadata');
                     }
                 }
+
+                getQualityReport(datasetId)
+                    .then(res => setQualityReport(res))
+                    .catch(e => console.error("Could not fetch quality report", e));
             }
 
             setColumnTypes(loadedTypes || inferColumnTypes(data));
@@ -167,9 +173,127 @@ function DataTablePreview({ data, onCellChange, datasetId }) {
         }
     };
 
+    const handleUseCleaned = () => {
+        if (!qualityReport) return;
+
+        // Create a deep copy of local data to apply changes
+        let newData = [...localData.map(row => [...row])];
+
+        const hd = qualityReport.header_detection;
+        if (hd) {
+            // Apply normalized column names
+            if (hd.normalized_column_names) {
+                // If the backend detected original data didn't have a header, it created col1, col2, etc.
+                if (hd.used_first_row_as_header === false &&
+                    newData[0].join(',') !== hd.normalized_column_names.join(',')) {
+                    // We duplicate the first row down so we don't lose data
+                    newData.splice(1, 0, [...newData[0]]);
+                }
+                newData[0] = [...hd.normalized_column_names];
+            }
+        }
+
+        // Missing Values Replace
+        if (qualityReport.missing_values && qualityReport.missing_values.tokens) {
+            const tokens = qualityReport.missing_values.tokens.map(t => String(t).toLowerCase());
+            for (let r = 1; r < newData.length; r++) {
+                for (let c = 0; c < newData[r].length; c++) {
+                    const val = newData[r][c];
+                    if (val === null || val === undefined) {
+                        newData[r][c] = '?';
+                    } else {
+                        const strVal = String(val).trim().toLowerCase();
+                        if (tokens.includes(strVal)) {
+                            newData[r][c] = '?';
+                        }
+                    }
+                }
+            }
+        }
+
+        // Text Inconsistencies Fixes
+        if (qualityReport.inconsistencies && qualityReport.inconsistencies.text_inconsistencies) {
+            const columns = newData[0];
+            const inc = qualityReport.inconsistencies.text_inconsistencies;
+            for (const [colName, details] of Object.entries(inc)) {
+                const colIndex = columns.indexOf(colName);
+                if (colIndex !== -1 && details.inconsistent_values) {
+                    for (const [inconsistentVal, mainVal] of Object.entries(details.inconsistent_values)) {
+                        for (let r = 1; r < newData.length; r++) {
+                            if (String(newData[r][colIndex]) === String(inconsistentVal)) {
+                                newData[r][colIndex] = mainVal;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        setLocalData(newData);
+    };
+
+    const renderQualityReport = () => {
+        if (!qualityReport) return null;
+
+        if (qualityReport.pipeline_error) {
+            return (
+                <div className="qr-alert qr-error">
+                    <div className="qr-header">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                        <h5>Pipeline Error</h5>
+                    </div>
+                    <p>{qualityReport.pipeline_error}</p>
+                </div>
+            );
+        }
+
+        const { header_detection, schema_check, missing_values, ingestion } = qualityReport;
+
+        return (
+            <div className="qr-container">
+                <div className="qr-header-row">
+                    <div className="qr-header success">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                        <h5>Pipeline Processed Data Successfully</h5>
+                    </div>
+                    <button className="qr-clean-btn" onClick={handleUseCleaned}>
+                        Use Cleaned Data
+                    </button>
+                </div>
+                <div className="qr-details">
+                    <div className="qr-item">
+                        <span className="qr-label">Imported Rows:</span>
+                        <span className="qr-value">{ingestion?.row_count || 0}</span>
+                    </div>
+                    {header_detection?.used_first_row_as_header && (
+                        <div className="qr-item">
+                            <span className="qr-label">Headers:</span>
+                            <span className="qr-value">Detected & Normalized</span>
+                        </div>
+                    )}
+                    <div className="qr-item">
+                        <span className="qr-label">Missing Values:</span>
+                        <span className="qr-value">
+                            {missing_values?.stats?.total_missing || 0}
+                            {missing_values?.stats?.missing_rate > 0
+                                ? ` (${(missing_values.stats.missing_rate * 100).toFixed(1)}%)`
+                                : ''}
+                        </span>
+                    </div>
+                    {schema_check && schema_check.duplicate_columns && schema_check.duplicate_columns.length > 0 && (
+                        <div className="qr-item warning">
+                            <span className="qr-label">Duplicate Columns:</span>
+                            <span className="qr-value">{schema_check.duplicate_columns.join(', ')}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="data-preview">
-            <h4>Data Preview</h4>
+            {renderQualityReport()}
             <div
                 className="data-preview-table-wrapper"
                 data-testid="data-preview-wrapper"

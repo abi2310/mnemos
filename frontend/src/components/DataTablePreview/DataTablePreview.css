@@ -350,3 +350,105 @@
 .data-preview-table-wrapper::-webkit-scrollbar-thumb:hover {
     background: var(--color-border-dark);
 }
+
+/* Quality Report Panel */
+.qr-container,
+.qr-alert {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.qr-error {
+    border-color: var(--color-danger, #ef4444);
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.qr-error p {
+    color: var(--color-danger, #ef4444);
+    margin: 0;
+    font-size: var(--font-size-sm);
+}
+
+.qr-error svg {
+    color: var(--color-danger, #ef4444);
+}
+
+.qr-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qr-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.qr-clean-btn {
+    background-color: var(--color-success, #10b981);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.qr-clean-btn:hover {
+    background-color: var(--color-success-dark, #059669);
+}
+
+.qr-header h5 {
+    margin: 0;
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+}
+
+.qr-header.success svg {
+    color: var(--color-success, #10b981);
+}
+
+.qr-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+}
+
+.qr-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-sm);
+    background-color: var(--color-bg-tertiary);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+}
+
+.qr-item.warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.qr-item.warning .qr-label {
+    color: var(--color-warning, #f59e0b);
+}
+
+.qr-label {
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-semibold);
+}
+
+.qr-value {
+    color: var(--color-text-primary);
+}
