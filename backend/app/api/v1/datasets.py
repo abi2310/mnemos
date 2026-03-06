@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, UploadFile, Form
 
@@ -67,3 +67,9 @@ async def get_dataset_preview(
 ):
     """Return a preview of the dataset data (columns + top rows)."""
     return ds_svc.get_preview_data(dataset_id, limit)
+
+@router.get("/datasets/{dataset_id}/quality-report", response_model=Dict[str, Any])
+async def get_quality_report(
+    dataset_id: str, ds_svc: DatasetService = Depends(get_dataset_service)
+):
+    return ds_svc.get_quality_report(dataset_id)

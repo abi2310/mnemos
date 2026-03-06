@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
+import json
 from uuid import uuid4
 import pandas as pd
 
@@ -9,6 +10,7 @@ from fastapi import HTTPException, UploadFile
 from ..core.config import get_settings
 from ..models.datasets import DatasetOut, DatasetStatus, DatasetSchema, ColumnSchema  
 from .storage import StorageService
+from .data_pipeline.pipeline import build_default_pipeline
 
 
 
@@ -50,7 +52,18 @@ class DatasetService:
             storage_key=storage_key,
         )
 
+        # Runs data pipeline
         self._store[dataset_id] = meta
+        pipeline = build_default_pipeline()
+        pipeline.run(
+            {
+                "dataset_id": dataset_id,
+                "storage_key": storage_key,
+                "original_name": meta.original_name,
+                "size_bytes": meta.size_bytes,
+                "storage": self._storage,
+            }
+        )
 
         return meta
 
@@ -169,3 +182,14 @@ class DatasetService:
         
         return [columns] + records
 
+    def get_quality_report(self, dataset_id: str) -> Dict[str, Any]:
+        meta = self._store.get(dataset_id)
+        if not meta:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+
+        report_key = f"datasets/{dataset_id}/quality_report.json"
+        try:
+            with self._storage.open(report_key) as handle:
+                return json.load(handle)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="Quality report not found")
