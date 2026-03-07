@@ -72,9 +72,21 @@ def test_missing_values_normalization_and_stats():
     result = missing_values.run({"dataframe": df})
     normalized = result["dataframe"]
 
-    assert normalized.isna().sum()["a"] == 2
-    assert normalized.isna().sum()["b"] == 2
-    assert result["missing_values"]["stats"]["total_missing"] == 4
+    assert normalized.isna().sum()["a"] == 1
+    assert normalized.isna().sum()["b"] == 1
+    assert result["missing_values"]["rows_all_missing_removed"] == 1
+    assert result["missing_values"]["stats"]["total_missing"] == 2
+
+
+def test_missing_values_removes_all_missing_rows():
+    df = pd.DataFrame({"a": ["", "ok"], "b": ["", "1"]})
+    result = missing_values.run({"dataframe": df})
+    normalized = result["dataframe"]
+
+    assert len(normalized) == 1
+    assert result["missing_values"]["rows_all_missing_removed"] == 1
+    assert result["missing_values"]["row_count_before"] == 2
+    assert result["missing_values"]["row_count_after"] == 1
 
 
 def test_type_inference_detects_common_types():
