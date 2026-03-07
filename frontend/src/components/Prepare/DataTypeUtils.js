@@ -69,7 +69,11 @@ export function inferColumnTypes(data) {
 export function convertDataToCSV(data) {
     return data.map(row =>
         row.map(cell => {
-            let str = String(cell !== null && cell !== undefined && cell !== '?' ? cell : '');
+            let str = '';
+            const strVal = String(cell).trim().toLowerCase();
+            if (cell !== null && cell !== undefined && cell !== '?' && strVal !== '' && strVal !== 'null' && strVal !== 'nan') {
+                str = String(cell);
+            }
             // Maskiere Kommas und Anführungszeichen nach CSV-Standard
             if (str.includes(',') || str.includes('"') || str.includes('\n')) {
                 str = `"${str.replace(/"/g, '""')}"`;

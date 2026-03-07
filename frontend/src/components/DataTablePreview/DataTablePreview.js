@@ -210,7 +210,8 @@ function DataTablePreview({ data, onCellChange, datasetId, onUseCleaned, onUseOr
             for (let r = 1; r < localData.length; r++) {
                 for (let c = 0; c < localData[0].length; c++) {
                     const val = localData[r][c];
-                    if (val === null || val === undefined || val === '' || val === '?') {
+                    const strVal = String(val).trim().toLowerCase();
+                    if (val === null || val === undefined || val === '?' || strVal === '' || strVal === 'null' || strVal === 'nan') {
                         currentMissing++;
                     }
                 }
@@ -352,7 +353,8 @@ function DataTablePreview({ data, onCellChange, datasetId, onUseCleaned, onUseOr
                         {localData.slice(1).map((row, rowIndex) => (
                             <tr key={rowIndex}>
                                 {row.map((cell, cellIndex) => {
-                                    const isEmpty = cell === '?' || cell === '' || cell === null;
+                                    const strCell = String(cell).trim().toLowerCase();
+                                    const isEmpty = cell === '?' || cell === null || cell === undefined || strCell === '' || strCell === 'null' || strCell === 'nan';
                                     return (
                                         <td
                                             key={cellIndex}
