@@ -10,21 +10,78 @@ PipelineContext = Dict[str, Any]
 _NUMERIC_RE = re.compile(r"^\s*-?\d+(\.\d+)?\s*$")
 
 
-def _looks_like_header(names: List[str]) -> bool:
-    # If most names are non-numeric and not "unnamed", assume header
+def _token_profile(tokens: List[str]) -> Dict[str, float]:
+    # Build a simple profile to compare header-like tokens vs data-like tokens.
+    if not tokens:
+        return {
+            "empty_ratio": 1.0,
+            "unnamed_ratio": 0.0,
+            "numeric_ratio": 0.0,
+            "text_ratio": 0.0,
+            "unique_ratio": 0.0,
+            "avg_len": 0.0,
+        }
+
+    lowered = [str(token).strip().lower() for token in tokens]
+    non_empty = [token for token in lowered if token != ""]
+    empty_ratio = 1.0 - (len(non_empty) / len(lowered))
+    unnamed_ratio = (
+        sum(1 for token in non_empty if token.startswith("unnamed")) / len(non_empty)
+        if non_empty
+        else 0.0
+    )
+    numeric_ratio = (
+        sum(1 for token in non_empty if _NUMERIC_RE.match(token)) / len(non_empty)
+        if non_empty
+        else 0.0
+    )
+    text_ratio = (
+        sum(1 for token in non_empty if re.search(r"[a-zA-Z]", token) is not None) / len(non_empty)
+        if non_empty
+        else 0.0
+    )
+    unique_ratio = (len(set(non_empty)) / len(non_empty)) if non_empty else 0.0
+    avg_len = (sum(len(token) for token in non_empty) / len(non_empty)) if non_empty else 0.0
+    return {
+        "empty_ratio": float(empty_ratio),
+        "unnamed_ratio": float(unnamed_ratio),
+        "numeric_ratio": float(numeric_ratio),
+        "text_ratio": float(text_ratio),
+        "unique_ratio": float(unique_ratio),
+        "avg_len": float(avg_len),
+    }
+
+
+def _looks_like_header(names: List[str], df: pd.DataFrame) -> bool:
+    # Decide header presence by comparing current column tokens with early data rows.
     if not names:
         return False
 
-    non_header_like = 0
-    for name in names:
-        lowered = str(name).strip().lower()
-        if lowered == "" or lowered.startswith("unnamed"):
-            non_header_like += 1
-            continue
-        if _NUMERIC_RE.match(lowered):
-            non_header_like += 1
+    name_profile = _token_profile(names)
+    if name_profile["empty_ratio"] > 0.4 or name_profile["unnamed_ratio"] > 0.4:
+        return False
+    if name_profile["numeric_ratio"] > 0.7:
+        return False
 
-    return non_header_like < max(1, int(len(names) * 0.6))
+    sample_df = df.head(5)
+    sample_tokens: List[str] = []
+    for _, row in sample_df.iterrows():
+        sample_tokens.extend([str(value) for value in row.tolist()])
+    sample_profile = _token_profile(sample_tokens)
+
+    distribution_gap = (
+        abs(name_profile["text_ratio"] - sample_profile["text_ratio"])
+        + abs(name_profile["numeric_ratio"] - sample_profile["numeric_ratio"])
+        + abs(name_profile["empty_ratio"] - sample_profile["empty_ratio"])
+    )
+    avg_len_den = max(name_profile["avg_len"], sample_profile["avg_len"], 1.0)
+    avg_len_gap = abs(name_profile["avg_len"] - sample_profile["avg_len"]) / avg_len_den
+
+    # If names look statistically too similar to row values, likely no real header exists.
+    if distribution_gap < 0.35 and avg_len_gap < 0.35:
+        return False
+
+    return name_profile["unique_ratio"] >= 0.7 and name_profile["text_ratio"] >= 0.3
 
 
 def _normalize_name(name: str) -> str:
@@ -59,7 +116,7 @@ def run(context: PipelineContext) -> PipelineContext:
         raise ValueError("Header detection requires 'dataframe' in context.")
 
     original_names = [str(name) for name in df.columns]
-    has_header = _looks_like_header(original_names)
+    has_header = _looks_like_header(original_names, df)
 
     if not has_header:
         df, header_names = _apply_no_header(df)
