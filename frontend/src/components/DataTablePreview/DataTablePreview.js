@@ -3,7 +3,7 @@ import './DataTablePreview.css';
 import { inferColumnTypes } from '../Prepare/DataTypeUtils';
 import { getQualityReport } from '../../services/DatasetService/datasetService';
 
-function DataTablePreview({ data, onCellChange, datasetId, onUseCleaned, onUseOriginal, isCleaned }) {
+function DataTablePreview({ data, onCellChange, datasetId, onUseCleaned, onUseOriginal, isCleaned, readOnly }) {
     const [localData, setLocalData] = useState([]);
     const [columnTypes, setColumnTypes] = useState([]);
     const [columnRoles, setColumnRoles] = useState([]);
@@ -186,7 +186,7 @@ function DataTablePreview({ data, onCellChange, datasetId, onUseCleaned, onUseOr
     };
 
     const renderQualityReport = () => {
-        if (!qualityReport) return null;
+        if (readOnly || !qualityReport) return null;
 
         if (qualityReport.pipeline_error) {
             return (
@@ -289,58 +289,64 @@ function DataTablePreview({ data, onCellChange, datasetId, onUseCleaned, onUseOr
                                         <div className="header-title-wrapper">
                                             <span className="header-title" title={col}>{col}</span>
                                         </div>
-                                        <div className="role-dropdown-wrapper" title="Set Role">
-                                            {columnRoles[index] !== 'regular' && (
-                                                <span className={`role-badge role-${columnRoles[index]}`}>
-                                                    {columnRoles[index]}
-                                                </span>
-                                            )}
-                                            <svg className="role-dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                            <select
-                                                className="role-select"
-                                                value={columnRoles[index] || 'regular'}
-                                                onChange={(e) => handleRoleChange(index, e.target.value)}
-                                            >
-                                                <option value="regular">regular</option>
-                                                <option value="label">label</option>
-                                                <option value="id">id</option>
-                                                <option value="weight">weight</option>
-                                            </select>
-                                        </div>
+                                        {!readOnly && (
+                                            <div className="role-dropdown-wrapper" title="Set Role">
+                                                {columnRoles[index] !== 'regular' && (
+                                                    <span className={`role-badge role-${columnRoles[index]}`}>
+                                                        {columnRoles[index]}
+                                                    </span>
+                                                )}
+                                                <svg className="role-dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                                <select
+                                                    className="role-select"
+                                                    value={columnRoles[index] || 'regular'}
+                                                    onChange={(e) => handleRoleChange(index, e.target.value)}
+                                                >
+                                                    <option value="regular">regular</option>
+                                                    <option value="label">label</option>
+                                                    <option value="id">id</option>
+                                                    <option value="weight">weight</option>
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
                                 </th>
                             ))}
                         </tr>
-                        <tr className="data-preview-table-types">
-                            {columnTypes.map((type, index) => (
-                                <th key={`type-${index}`} className="type-cell">
-                                    <div className={`type-select-wrapper ${getTypeClass(type)}`}>
-                                        <select
-                                            className="type-select-visible"
-                                            value={type}
-                                            onChange={(e) => handleTypeChange(index, e.target.value)}
-                                            title="Change data type"
-                                        >
-                                            <option value="polynominal">Category</option>
-                                            <option value="binominal">Category (Binary)</option>
-                                            <option value="integer">Number (Integer)</option>
-                                            <option value="real">Number (Real)</option>
-                                            <option value="date_time">Date & Time</option>
-                                            <option value="date">Date</option>
-                                            <option value="time">Time</option>
-                                        </select>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '8px', opacity: 0.6, pointerEvents: 'none' }}><path d="M6 9l6 6 6-6" /></svg>
-                                    </div>
-                                </th>
-                            ))}
-                        </tr>
-                        <tr className="data-preview-table-viz">
-                            {columnTypes.map((type, index) => (
-                                <th key={`viz-${index}`}>
-                                    {renderVisualization(index, type)}
-                                </th>
-                            ))}
-                        </tr>
+                        {!readOnly && (
+                            <>
+                                <tr className="data-preview-table-types">
+                                    {columnTypes.map((type, index) => (
+                                        <th key={`type-${index}`} className="type-cell">
+                                            <div className={`type-select-wrapper ${getTypeClass(type)}`}>
+                                                <select
+                                                    className="type-select-visible"
+                                                    value={type}
+                                                    onChange={(e) => handleTypeChange(index, e.target.value)}
+                                                    title="Change data type"
+                                                >
+                                                    <option value="polynominal">Category</option>
+                                                    <option value="binominal">Category (Binary)</option>
+                                                    <option value="integer">Number (Integer)</option>
+                                                    <option value="real">Number (Real)</option>
+                                                    <option value="date_time">Date & Time</option>
+                                                    <option value="date">Date</option>
+                                                    <option value="time">Time</option>
+                                                </select>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '8px', opacity: 0.6, pointerEvents: 'none' }}><path d="M6 9l6 6 6-6" /></svg>
+                                            </div>
+                                        </th>
+                                    ))}
+                                </tr>
+                                <tr className="data-preview-table-viz">
+                                    {columnTypes.map((type, index) => (
+                                        <th key={`viz-${index}`}>
+                                            {renderVisualization(index, type)}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </>
+                        )}
                     </thead>
                     <tbody>
                         {localData.slice(1).map((row, rowIndex) => (
@@ -350,11 +356,11 @@ function DataTablePreview({ data, onCellChange, datasetId, onUseCleaned, onUseOr
                                     return (
                                         <td
                                             key={cellIndex}
-                                            className={`editable-cell ${isEmpty ? 'empty-cell' : ''}`}
+                                            className={`editable-cell ${isEmpty ? 'empty-cell' : ''} ${readOnly ? 'read-only' : ''}`}
                                             title={!isEmpty ? String(cell) : undefined}
-                                            contentEditable
-                                            suppressContentEditableWarning
-                                            onBlur={(e) => handleCellChange(rowIndex, cellIndex, e.target.textContent)}
+                                            contentEditable={!readOnly}
+                                            suppressContentEditableWarning={!readOnly}
+                                            onBlur={readOnly ? undefined : (e) => handleCellChange(rowIndex, cellIndex, e.target.textContent)}
                                         >
                                             {!isEmpty ? cell : ''}
                                         </td>

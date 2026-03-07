@@ -16,11 +16,11 @@ describe('DataTablePreview – zusätzliche Tests', () => {
         expect(wrapper).toBeInTheDocument();
     });
 
-    test('rendert genau eine Tabellen-Überschriftenzeile (thead)', () => {
+    test('rendert die korrekten Spaltenheader (3 Titel, 3 Typen, 3 Viz = 9 Header-Zellen)', () => {
         render(<DataTablePreview data={data} />);
 
         const headerCells = screen.getAllByRole('columnheader');
-        expect(headerCells).toHaveLength(3);
+        expect(headerCells).toHaveLength(9);
     });
 
     test('rendert die korrekte Anzahl an Datenzeilen', () => {
@@ -28,7 +28,7 @@ describe('DataTablePreview – zusätzliche Tests', () => {
 
         const rows = screen.getAllByRole('row');
 
-        // 1 Header-Zeile + 2 Datenzeilen
-        expect(rows).toHaveLength(3);
+        // 3 Header-Zeilen (Titel, Typen, Viz) + 2 Datenzeilen = 5
+        expect(rows).toHaveLength(5);
     });
 });

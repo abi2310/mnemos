@@ -150,6 +150,7 @@ function FilePreviewPanel({ file, onClose }) {
                         onUseCleaned={() => setUseCleaned(true)}
                         onUseOriginal={() => setUseCleaned(false)}
                         isCleaned={useCleaned}
+                        readOnly={true}
                     />
                 ) : (
                     <div className="preview-empty">No data available for preview.</div>
