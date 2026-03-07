@@ -3,6 +3,7 @@ import UploadSection from './UploadSection';
 import FilesSection from './FilesSection';
 import { uploadDataset, getDatasets, deleteDataset } from '../../services/DatasetService/datasetService';
 import DataWrangler from './DataWrangler';
+import { parseFile } from '../../utils/fileParser/fileParser';
 import './Prepare.css';
 
 /**
@@ -40,7 +41,30 @@ function Prepare({ hideUpload }) {
         try {
             // Upload jeweils erste Datei (Backend akzeptiert einzelne Files)
             for (const file of files) {
-                await uploadDataset(file);
+                // 1. Datei mit FileParser parsen (z.B. Excel, JSON, CSV) zu einem 2D-Array
+                const parsedData = await parseFile(file);
+
+                // 2. 2D-Array in einen CSV-String umwandeln
+                const csvString = parsedData.map(row =>
+                    row.map(cell => {
+                        const cellStr = cell === null || cell === undefined ? '' : String(cell);
+                        // Escape quotes and wrap in quotes if it contains comma, newline, or quote
+                        if (/[,"\n\r]/.test(cellStr)) {
+                            return `"${cellStr.replace(/"/g, '""')}"`;
+                        }
+                        return cellStr;
+                    }).join(',')
+                ).join('\n');
+
+                // 3. Name anpassen (Erweiterung in .csv ändern)
+                const originalName = file.name;
+                const baseName = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+                const newFileName = `${baseName}.csv`;
+
+                // 4. Neues File-Objekt erstellen
+                const normalizedFile = new File([csvString], newFileName, { type: 'text/csv' });
+
+                await uploadDataset(normalizedFile);
             }
 
             // Refresh die Liste nach Upload
