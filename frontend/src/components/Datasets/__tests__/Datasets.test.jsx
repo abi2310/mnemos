@@ -1,12 +1,13 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import Datasets from '../Datasets';
-import { getDatasets } from '../../../services/DatasetService/datasetService';
+import { getDatasets, getDatasetPreview } from '../../../services/DatasetService/datasetService';
 
 jest.mock('../../../services/DatasetService/datasetService', () => ({
     getDatasets: jest.fn(),
     uploadDataset: jest.fn(),
     deleteDataset: jest.fn(),
     getDatasetSchema: jest.fn(),
+    getDatasetPreview: jest.fn(),
 }));
 
 const mockDatasets = [
@@ -33,6 +34,7 @@ const mockDatasets = [
 describe('Datasets Component', () => {
     beforeEach(() => {
         getDatasets.mockResolvedValue(mockDatasets);
+        getDatasetPreview.mockResolvedValue([]);
     });
 
     afterEach(() => {
@@ -42,7 +44,7 @@ describe('Datasets Component', () => {
     // ===== Rendering =====
 
     test('zeigt Lade-Zustand initial', () => {
-        getDatasets.mockReturnValue(new Promise(() => {})); // never resolves
+        getDatasets.mockReturnValue(new Promise(() => { })); // never resolves
         render(<Datasets />);
         expect(screen.getByText(/Loading files/i)).toBeInTheDocument();
     });
@@ -176,10 +178,12 @@ describe('Datasets Component', () => {
         const previewButtons = screen.getAllByTitle('Preview');
         fireEvent.click(previewButtons[0]);
 
-        expect(screen.getByText(/NEEDS TO BE IMPLEMENTED/i)).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText(/No data available/i)).toBeInTheDocument();
+        });
 
         fireEvent.click(screen.getByText('Close'));
-        expect(screen.queryByText(/NEEDS TO BE IMPLEMENTED/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/No data available/i)).not.toBeInTheDocument();
     });
 
     test('öffnet und schließt Projects-Panel', async () => {
@@ -205,7 +209,9 @@ describe('Datasets Component', () => {
 
         const previewButtons = screen.getAllByTitle('Preview');
         fireEvent.click(previewButtons[0]);
-        expect(screen.getByText(/NEEDS TO BE IMPLEMENTED/i)).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText(/No data available/i)).toBeInTheDocument();
+        });
 
         const projectButtons = screen.getAllByTitle('Used in Projects');
         fireEvent.click(projectButtons[0]);
@@ -222,8 +228,10 @@ describe('Datasets Component', () => {
         const previewButtons = screen.getAllByTitle('Preview');
         fireEvent.click(previewButtons[1]); // Click on second dataset
 
-        const previews = screen.getAllByText(/NEEDS TO BE IMPLEMENTED/i);
-        expect(previews).toHaveLength(1);
+        await waitFor(() => {
+            const previews = screen.getAllByText(/No data available/i);
+            expect(previews).toHaveLength(1);
+        });
     });
 
     // ===== File Size Formatting =====

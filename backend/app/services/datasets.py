@@ -88,30 +88,52 @@ class DatasetService:
         """Return a list of all stored dataset metadata."""
         return list(self._store.values())
     
-    def update(self, dataset_id: str, file: UploadFile | None = None, original_name: str | None = None) -> DatasetOut:
+    def update(self, dataset_id: str, file: UploadFile | None = None, original_name: str | None = None, use_cleaned: bool = False) -> DatasetOut:
         """Update dataset metadata and/or file content. Raises HTTPException if not found."""
         meta = self._store.get(dataset_id)
         if not meta:
             raise HTTPException(status_code=404, detail="Dataset not found")
         
+        target_key = meta.storage_key
+        if use_cleaned:
+            target_key = f"datasets/{dataset_id}/cleaned.csv"
+
         # Update file if provided
         if file:
             self._validate_extension(file.filename or "")
             # Delete old file
-            self._storage.delete(meta.storage_key)
+            try:
+                self._storage.delete(target_key)
+            except FileNotFoundError:
+                pass
             # Save new file with same path
-            size = self._storage.save(meta.storage_key, file.file)
-            meta.size_bytes = size
+            size = self._storage.save(target_key, file.file)
+            
+            # Only update meta size if we are editing the raw file
+            if not use_cleaned:
+                meta.size_bytes = size
         
         # Update name if provided
-        if original_name is not None:
+        if original_name is not None and not use_cleaned:
             meta.original_name = original_name
         
         return meta
     
-    def _load_dataframe(self, meta: DatasetOut) -> pd.DataFrame:
-        ext = Path(meta.storage_key).suffix.lower()
-        f = self._storage.open(meta.storage_key)
+    def _load_dataframe(self, meta: DatasetOut, use_cleaned: bool = False) -> pd.DataFrame:
+        storage_key = meta.storage_key
+        
+        if use_cleaned:
+            cleaned_key = f"datasets/{meta.dataset_id}/cleaned.csv"
+            # Fallback to raw data if cleaned doesn't exist yet
+            try:
+                with self._storage.open(cleaned_key):
+                    pass
+                storage_key = cleaned_key
+            except FileNotFoundError:
+                pass
+                
+        ext = Path(storage_key).suffix.lower()
+        f = self._storage.open(storage_key)
 
         if ext == ".csv":
             df = pd.read_csv(f, nrows=10000)
@@ -162,6 +184,25 @@ class DatasetService:
             columns=columns,
         )
         return schema
+
+    def get_preview_data(self, dataset_id: str, limit: int = 100, use_cleaned: bool = False) -> list[list]:
+        import json
+        meta = self._store.get(dataset_id)
+        if not meta:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+
+        df = self._load_dataframe(meta, use_cleaned=use_cleaned)
+        
+        if len(df) > limit:
+            df = df.head(limit)
+            
+        df = df.fillna('?')
+        
+        columns = df.columns.tolist()
+        json_str = df.to_json(orient='values', date_format='iso')
+        records = json.loads(json_str)
+        
+        return [columns] + records
 
     def get_quality_report(self, dataset_id: str) -> Dict[str, Any]:
         meta = self._store.get(dataset_id)

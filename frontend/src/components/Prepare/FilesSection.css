@@ -181,7 +181,7 @@
     font-weight: var(--font-weight-medium);
 }
 
-.files-table-cell--name > div {
+.files-table-cell--name>div {
     display: flex;
     align-items: center;
     gap: var(--spacing-3);
@@ -349,4 +349,3 @@
         font-size: 10px;
     }
 }
-
