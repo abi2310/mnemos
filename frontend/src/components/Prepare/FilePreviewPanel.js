@@ -43,6 +43,7 @@ function FilePreviewPanel({ file, onClose }) {
     const [previewData, setPreviewData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [useCleaned, setUseCleaned] = useState(false);
 
     useEffect(() => {
         if (!file?.dataset_id) return;
@@ -51,7 +52,7 @@ function FilePreviewPanel({ file, onClose }) {
             setIsLoading(true);
             setError(null);
             try {
-                const data = await getDatasetPreview(file.dataset_id, 100);
+                const data = await getDatasetPreview(file.dataset_id, 100, useCleaned);
                 setPreviewData(data);
             } catch (err) {
                 console.error(err);
@@ -62,7 +63,7 @@ function FilePreviewPanel({ file, onClose }) {
         };
 
         loadPreview();
-    }, [file]);
+    }, [file, useCleaned]);
 
     return (
         <div className="preview-panel" role="region" aria-label="File preview">
@@ -143,7 +144,13 @@ function FilePreviewPanel({ file, onClose }) {
                 ) : error ? (
                     <div className="preview-error">{error}</div>
                 ) : previewData.length > 0 ? (
-                    <DataTablePreview data={previewData} />
+                    <DataTablePreview
+                        data={previewData}
+                        datasetId={file?.dataset_id}
+                        onUseCleaned={() => setUseCleaned(true)}
+                        onUseOriginal={() => setUseCleaned(false)}
+                        isCleaned={useCleaned}
+                    />
                 ) : (
                     <div className="preview-empty">No data available for preview.</div>
                 )}

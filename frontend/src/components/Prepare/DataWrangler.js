@@ -4,11 +4,13 @@ import DataTablePreview from '../DataTablePreview/DataTablePreview';
 import { convertDataToCSV } from './DataTypeUtils';
 import './DataWrangler.css';
 
-function DataWrangler({ datasets, onRemoveDataset }) {
+function DataWrangler({ datasets, onRemoveDataset, onAddDataset }) {
     const [selectedDatasetId, setSelectedDatasetId] = useState('');
     const [previewData, setPreviewData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const [useCleaned, setUseCleaned] = useState(false);
 
     useEffect(() => {
         if (datasets.length > 0 && !selectedDatasetId) {
@@ -26,7 +28,7 @@ function DataWrangler({ datasets, onRemoveDataset }) {
             setIsLoading(true);
             setError(null);
             try {
-                const data = await getDatasetPreview(selectedDatasetId, 200);
+                const data = await getDatasetPreview(selectedDatasetId, 200, useCleaned);
                 setPreviewData(data);
             } catch (err) {
                 console.error(err);
@@ -36,7 +38,7 @@ function DataWrangler({ datasets, onRemoveDataset }) {
             }
         };
         loadPreview();
-    }, [selectedDatasetId]);
+    }, [selectedDatasetId, useCleaned]);
 
     const handleCellChange = async (rowIndex, colIndex, newValue) => {
         try {
@@ -53,11 +55,23 @@ function DataWrangler({ datasets, onRemoveDataset }) {
             const originalName = selectedDataset?.original_name || 'dataset.csv';
 
             const file = new File([csvString], originalName, { type: 'text/csv' });
-            await updateDataset(selectedDatasetId, file);
+            await updateDataset(selectedDatasetId, file, useCleaned);
         } catch (err) {
             console.error("Failed to update cell backend:", err);
             setError("Failed to save changes visually. Try again.");
         }
+    };
+
+    const fileInputRef = React.useRef(null);
+
+    const handleFileSelect = (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            if (onAddDataset) {
+                onAddDataset(e.target.files);
+            }
+        }
+        // Reset input value in case the user wants to upload the same file again
+        e.target.value = null;
     };
 
     if (!datasets || datasets.length === 0) {
@@ -76,6 +90,13 @@ function DataWrangler({ datasets, onRemoveDataset }) {
 
     return (
         <div className="data-wrangler-container">
+            <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                multiple
+                onChange={handleFileSelect}
+            />
             {/* Top Toolbar */}
             <div className="wrangler-toolbar">
                 <div className="wrangler-toolbar-left">
@@ -108,10 +129,19 @@ function DataWrangler({ datasets, onRemoveDataset }) {
                                 )}
                             </button>
                         ))}
+                        {onAddDataset && (
+                            <button
+                                className="wrangler-tab wrangler-tab-add"
+                                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                title="Add dataset"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                        )}
                     </div>
-                </div>
-                <div className="wrangler-toolbar-right">
-                    <button className="wrangler-action-btn primary">Export Code</button>
                 </div>
             </div>
 
@@ -131,6 +161,9 @@ function DataWrangler({ datasets, onRemoveDataset }) {
                                 data={previewData}
                                 datasetId={selectedDatasetId}
                                 onCellChange={handleCellChange}
+                                onUseCleaned={() => setUseCleaned(true)}
+                                onUseOriginal={() => setUseCleaned(false)}
+                                isCleaned={useCleaned}
                             />
                         ) : (
                             <div className="wrangler-empty-state">No data rows found.</div>

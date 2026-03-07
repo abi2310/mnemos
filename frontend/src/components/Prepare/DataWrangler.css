@@ -77,6 +77,16 @@
     opacity: 1 !important;
 }
 
+.wrangler-tab-add {
+    padding: 0 12px;
+    opacity: 0.6;
+}
+
+.wrangler-tab-add:hover {
+    opacity: 1;
+    background-color: var(--color-bg-secondary);
+}
+
 .wrangler-tab-close {
     display: inline-flex;
     align-items: center;

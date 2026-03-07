@@ -45,10 +45,11 @@ async def update_dataset(
     dataset_id: str,
     file: UploadFile | None = None,
     original_name: str | None = Form(None),
+    use_cleaned: bool = Form(False),
     ds_svc: DatasetService = Depends(get_dataset_service),
 ):
     """Update dataset metadata and/or file content."""
-    return ds_svc.update(dataset_id, file=file, original_name=original_name)
+    return ds_svc.update(dataset_id, file=file, original_name=original_name, use_cleaned=use_cleaned)
 
 
 @router.get("/datasets/{dataset_id}/schema", response_model=DatasetSchema)
@@ -63,10 +64,11 @@ async def get_dataset_schema(
 async def get_dataset_preview(
     dataset_id: str,
     limit: int = 100,
+    use_cleaned: bool = False,
     ds_svc: DatasetService = Depends(get_dataset_service),
 ):
     """Return a preview of the dataset data (columns + top rows)."""
-    return ds_svc.get_preview_data(dataset_id, limit)
+    return ds_svc.get_preview_data(dataset_id, limit, use_cleaned=use_cleaned)
 
 @router.get("/datasets/{dataset_id}/quality-report", response_model=Dict[str, Any])
 async def get_quality_report(

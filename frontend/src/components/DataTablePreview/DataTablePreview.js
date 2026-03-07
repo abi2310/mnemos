@@ -3,7 +3,7 @@ import './DataTablePreview.css';
 import { inferColumnTypes } from '../Prepare/DataTypeUtils';
 import { getQualityReport } from '../../services/DatasetService/datasetService';
 
-function DataTablePreview({ data, onCellChange, datasetId }) {
+function DataTablePreview({ data, onCellChange, datasetId, onUseCleaned, onUseOriginal, isCleaned }) {
     const [localData, setLocalData] = useState([]);
     const [columnTypes, setColumnTypes] = useState([]);
     const [columnRoles, setColumnRoles] = useState([]);
@@ -174,62 +174,15 @@ function DataTablePreview({ data, onCellChange, datasetId }) {
     };
 
     const handleUseCleaned = () => {
-        if (!qualityReport) return;
-
-        // Create a deep copy of local data to apply changes
-        let newData = [...localData.map(row => [...row])];
-
-        const hd = qualityReport.header_detection;
-        if (hd) {
-            // Apply normalized column names
-            if (hd.normalized_column_names) {
-                // If the backend detected original data didn't have a header, it created col1, col2, etc.
-                if (hd.used_first_row_as_header === false &&
-                    newData[0].join(',') !== hd.normalized_column_names.join(',')) {
-                    // We duplicate the first row down so we don't lose data
-                    newData.splice(1, 0, [...newData[0]]);
-                }
-                newData[0] = [...hd.normalized_column_names];
-            }
+        if (onUseCleaned) {
+            onUseCleaned();
         }
+    };
 
-        // Missing Values Replace
-        if (qualityReport.missing_values && qualityReport.missing_values.tokens) {
-            const tokens = qualityReport.missing_values.tokens.map(t => String(t).toLowerCase());
-            for (let r = 1; r < newData.length; r++) {
-                for (let c = 0; c < newData[r].length; c++) {
-                    const val = newData[r][c];
-                    if (val === null || val === undefined) {
-                        newData[r][c] = '?';
-                    } else {
-                        const strVal = String(val).trim().toLowerCase();
-                        if (tokens.includes(strVal)) {
-                            newData[r][c] = '?';
-                        }
-                    }
-                }
-            }
+    const handleUseOriginal = () => {
+        if (onUseOriginal) {
+            onUseOriginal();
         }
-
-        // Text Inconsistencies Fixes
-        if (qualityReport.inconsistencies && qualityReport.inconsistencies.text_inconsistencies) {
-            const columns = newData[0];
-            const inc = qualityReport.inconsistencies.text_inconsistencies;
-            for (const [colName, details] of Object.entries(inc)) {
-                const colIndex = columns.indexOf(colName);
-                if (colIndex !== -1 && details.inconsistent_values) {
-                    for (const [inconsistentVal, mainVal] of Object.entries(details.inconsistent_values)) {
-                        for (let r = 1; r < newData.length; r++) {
-                            if (String(newData[r][colIndex]) === String(inconsistentVal)) {
-                                newData[r][colIndex] = mainVal;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        setLocalData(newData);
     };
 
     const renderQualityReport = () => {
@@ -247,7 +200,23 @@ function DataTablePreview({ data, onCellChange, datasetId }) {
             );
         }
 
-        const { header_detection, schema_check, missing_values, ingestion } = qualityReport;
+        const { header_detection, schema_check, ingestion } = qualityReport;
+
+        // Dynamically calculate missing values from the currently displayed localData
+        let currentMissing = 0;
+        let totalCells = 0;
+        if (localData && localData.length > 1) {
+            totalCells = (localData.length - 1) * localData[0].length;
+            for (let r = 1; r < localData.length; r++) {
+                for (let c = 0; c < localData[0].length; c++) {
+                    const val = localData[r][c];
+                    if (val === null || val === undefined || val === '' || val === '?') {
+                        currentMissing++;
+                    }
+                }
+            }
+        }
+        const missingRate = totalCells > 0 ? (currentMissing / totalCells) : 0;
 
         return (
             <div className="qr-container">
@@ -256,9 +225,22 @@ function DataTablePreview({ data, onCellChange, datasetId }) {
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
                         <h5>Pipeline Processed Data Successfully</h5>
                     </div>
-                    <button className="qr-clean-btn" onClick={handleUseCleaned}>
-                        Use Cleaned Data
-                    </button>
+                    <div className="qr-header-actions">
+                        <button
+                            className={`qr-action-btn original ${!isCleaned ? 'active' : ''}`}
+                            onClick={handleUseOriginal}
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            Original
+                        </button>
+                        <button
+                            className={`qr-action-btn cleaned ${isCleaned ? 'active' : ''}`}
+                            onClick={handleUseCleaned}
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            Cleaned
+                        </button>
+                    </div>
                 </div>
                 <div className="qr-details">
                     <div className="qr-item">
@@ -274,9 +256,9 @@ function DataTablePreview({ data, onCellChange, datasetId }) {
                     <div className="qr-item">
                         <span className="qr-label">Missing Values:</span>
                         <span className="qr-value">
-                            {missing_values?.stats?.total_missing || 0}
-                            {missing_values?.stats?.missing_rate > 0
-                                ? ` (${(missing_values.stats.missing_rate * 100).toFixed(1)}%)`
+                            {currentMissing}
+                            {missingRate > 0
+                                ? ` (${(missingRate * 100).toFixed(1)}%)`
                                 : ''}
                         </span>
                     </div>
