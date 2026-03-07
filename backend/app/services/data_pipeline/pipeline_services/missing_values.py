@@ -57,6 +57,15 @@ def _missing_stats(df: pd.DataFrame) -> Dict[str, Any]:
     }
 
 
+def _drop_all_missing_rows(df: pd.DataFrame) -> tuple[pd.DataFrame, int, int, int]:
+    # Remove rows where all columns are missing after token normalization.
+    rows_before = int(df.shape[0])
+    cleaned = df.dropna(axis=0, how="all")
+    rows_after = int(cleaned.shape[0])
+    removed = rows_before - rows_after
+    return cleaned, removed, rows_before, rows_after
+
+
 def run(context: PipelineContext) -> PipelineContext:
     # Standardize missing tokens to NaN and attach missing stats.
     df = context.get("dataframe")
@@ -64,12 +73,16 @@ def run(context: PipelineContext) -> PipelineContext:
         raise ValueError("Missing values requires 'dataframe' in context.")
 
     normalized = _normalize_missing_tokens(df, _MISSING_TOKENS)
-    stats = _missing_stats(normalized)
+    cleaned_df, removed_rows, rows_before, rows_after = _drop_all_missing_rows(normalized)
+    stats = _missing_stats(cleaned_df)
 
     context = dict(context)
-    context["dataframe"] = normalized
+    context["dataframe"] = cleaned_df
     context["missing_values"] = {
         "tokens": _MISSING_TOKENS,
+        "rows_all_missing_removed": removed_rows,
+        "row_count_before": rows_before,
+        "row_count_after": rows_after,
         "stats": stats,
     }
     return context
