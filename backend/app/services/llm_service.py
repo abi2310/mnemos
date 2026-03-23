@@ -277,7 +277,7 @@ class LLMService:
         return str(
             {
                 "rows": profile.row_count,
-                "columns": profile.column_count,
+                "column_count": profile.column_count,
                 "numeric_columns": profile.numeric_columns,
                 "categorical_columns": profile.categorical_columns,
                 "time_columns": profile.time_columns,

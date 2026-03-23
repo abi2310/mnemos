@@ -4,7 +4,6 @@ from app.graph.nodes import AnalysisNodes, GraphDependencies
 from app.policies.agent_policies import AgentPolicyEngine
 from app.renderers.chart_renderer import ChartRenderer
 from app.schemas.agent import (
-    CategoryValue,
     ChartSpec,
     ChartType,
     ColumnProfile,

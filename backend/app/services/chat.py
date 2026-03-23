@@ -8,7 +8,7 @@ from fastapi import HTTPException
 
 from ..core.config import get_settings
 from ..models.chat import ChatDB, MessageDB, ChatCreate, ChatOut, MessageCreate, MessageOut
-from ..schemas.agent import ChatHistoryItem, OutputMode
+from ..schemas.agent import ChatHistoryItem
 from ..schemas.chat_api import ChatTurnResponse
 from ..services.analysis_agent import AnalysisAgentService
 from ..services.datasets import DatasetService

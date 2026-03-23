@@ -18,11 +18,8 @@ from app.schemas.agent import (
     FinalResponse,
     InterruptKind,
     OutputMode,
-    ReviewIssue,
     ArtifactRef,
     ArtifactType,
-    CodeReviewResult,
-    FreeCodeSpec,
     SandboxResult,
 )
 from app.services.dataset_profiler import DatasetProfiler
