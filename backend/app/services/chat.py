@@ -15,7 +15,7 @@ class ChatService:
     def create_tables(self):
         """Create all tables if they don't exist."""
         from sqlmodel import SQLModel
-        from ..models.chat import ChatDB, MessageDB  # Import to register models
+
         SQLModel.metadata.create_all(self.engine)
 
     def create_chat(self, chat_data: ChatCreate) -> ChatOut:
