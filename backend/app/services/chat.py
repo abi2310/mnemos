@@ -1,25 +1,30 @@
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, List, cast
-from uuid import uuid4
 
 from sqlalchemy import asc
-from sqlmodel import Session, select, create_engine
+from sqlmodel import Session, create_engine, select
 from fastapi import HTTPException
 
 from ..core.config import get_settings
 from ..models.chat import ChatDB, MessageDB, ChatCreate, ChatOut, MessageCreate, MessageOut
+from ..schemas.agent import ChatHistoryItem, OutputMode
+from ..schemas.chat_api import ChatTurnResponse
+from ..services.analysis_agent import AnalysisAgentService
 from ..services.datasets import DatasetService
-from ..services.llm_agent import LLMAgent
 
 
 class ChatService:
-    def __init__(self, dataset_service: DatasetService | None = None, llm_agent: LLMAgent | None = None):
+    def __init__(self, dataset_service: DatasetService | None = None, storage_dir: Path | None = None):
         settings = get_settings()
         self.engine = create_engine(settings.database_url, echo=False)
         self.dataset_service = dataset_service
-        self.llm_agent = llm_agent or LLMAgent()
-        self.storage_dir = settings.storage_dir
+        self.storage_dir = storage_dir or settings.storage_dir
+        self.analysis_agent = (
+            AnalysisAgentService(dataset_service=dataset_service, storage_dir=self.storage_dir)
+            if dataset_service is not None
+            else None
+        )
 
     def create_tables(self):
         """Create all tables if they don't exist."""
@@ -51,19 +56,6 @@ class ChatService:
         session.commit()
         session.refresh(message)
         return message
-
-    def _fetch_dataset(self, dataset_id: str):
-        if not self.dataset_service:
-            raise HTTPException(status_code=500, detail="Dataset service is not configured")
-        meta = self.dataset_service.get(dataset_id)
-        return self.dataset_service._load_dataframe(meta)
-
-    def _build_generated_image_location(self, chat_id: int) -> tuple[str, str]:
-        relative_key = Path("images") / str(chat_id) / f"{uuid4().hex}.png"
-        absolute_path = self.storage_dir / relative_key
-        absolute_path.parent.mkdir(parents=True, exist_ok=True)
-        public_url = f"/storage/{relative_key.as_posix()}"
-        return str(absolute_path), public_url
 
     def create_chat(self, chat_data: ChatCreate) -> ChatOut:
         """Create a new chat."""
@@ -124,88 +116,89 @@ class ChatService:
                 ]
             }
 
-    def add_message(self, chat_id: int, message_data: MessageCreate) -> MessageOut:
-        """Add a message to a chat and update the chat's updated_at."""
+    def add_message(self, chat_id: int, message_data: MessageCreate) -> ChatTurnResponse:
+        """Add a message to a chat and run or resume the LangGraph workflow for user turns."""
         with Session(self.engine) as session:
-            # Check if chat exists
             chat = session.get(ChatDB, chat_id)
             if not chat:
                 raise HTTPException(status_code=404, detail="Chat not found")
 
-            # Persist user message in chat
-            self._create_message(
+            persisted_message = self._create_message(
                 session=session,
                 chat_id=chat_id,
                 role=message_data.role,
                 content=message_data.content,
             )
 
-            # Update chat's updated_at
             chat.updated_at = datetime.now(timezone.utc)
             session.add(chat)
             session.commit()
 
-            assistant_content = None
-            generated_code = None
-            generated_image = None
-
-            if message_data.role == "user":
-                dataset_df = self._fetch_dataset(chat.dataset_id)
-                message_history = "\n".join(
-                    [f"{m.role}: {m.content}" for m in session.exec(
-                        select(MessageDB).where(MessageDB.chat_id == chat_id).order_by(asc(cast(Any, MessageDB.created_at)))
-                    ).all()]
+            if message_data.role != "user":
+                return ChatTurnResponse(
+                    status="completed",
+                    assistant_message=self._message_to_out(persisted_message),
+                    final_response=None,
+                    interrupt=None,
                 )
-                llm_action = self.llm_agent.choose_action(message_data.content, message_history, dataset_df)
 
-                if llm_action["type"] == "diagram":
-                    generated_code = llm_action.get("python_code")
-                    assistant_content = llm_action.get("assistant_text")
-                    if generated_code:
-                        image_path, public_url = self._build_generated_image_location(chat_id)
-                        self.llm_agent.execute_code(generated_code, dataset_df, image_path)
-                        image_review = self.llm_agent.review_rendered_image(
-                            message_data.content,
-                            message_history,
-                            dataset_df,
-                            image_path,
-                            generated_code,
-                        )
-                        revised_code = image_review.get("python_code")
-                        if image_review.get("approved") is False and isinstance(revised_code, str) and revised_code.strip():
-                            generated_code = revised_code
-                            self.llm_agent.execute_code(generated_code, dataset_df, image_path)
-                            issues = image_review.get("issues", [])
-                            issue_text = ", ".join(str(issue) for issue in issues) if issues else "visuelle Probleme"
-                            assistant_content = (
-                                (assistant_content or "Ich habe ein Diagramm erstellt.")
-                                + f" Die Visualisierung wurde nach Bild-Review einmal neu generiert ({issue_text})."
-                            )
-                        generated_image = public_url
-                else:
-                    assistant_content = llm_action.get("assistant_text")
+            if not self.dataset_service or self.analysis_agent is None:
+                raise HTTPException(status_code=500, detail="Agent dependencies are not configured")
 
-            elif message_data.role == "assistant":
-                assistant_content = message_data.content
+            ordered_messages = session.exec(
+                select(MessageDB).where(MessageDB.chat_id == chat_id).order_by(asc(cast(Any, MessageDB.created_at)))
+            ).all()
+            history_items = [
+                ChatHistoryItem(role=message.role, content=message.content)
+                for message in ordered_messages[:-1]
+                if message.role in {"system", "user", "assistant"}
+            ]
 
-            if assistant_content is None:
-                assistant_content = "(keine Antwort generiert)"
+            pending_interrupt = self.analysis_agent.has_pending_interrupt(chat_id)
+            should_attempt_resume = pending_interrupt or self._last_assistant_looks_like_clarification(ordered_messages)
+
+            if should_attempt_resume:
+                try:
+                    execution_result = self.analysis_agent.resume(chat_id, message_data.content)
+                except Exception:
+                    execution_result = self.analysis_agent.run(
+                        chat_id=chat_id,
+                        dataset_id=chat.dataset_id,
+                        user_question=message_data.content,
+                        chat_history=history_items,
+                    )
+            else:
+                execution_result = self.analysis_agent.run(
+                    chat_id=chat_id,
+                    dataset_id=chat.dataset_id,
+                    user_question=message_data.content,
+                    chat_history=history_items,
+                )
+
+            assistant_content = self._assistant_content_from_execution(execution_result)
+            generated_image = None
+            if execution_result.final_response and execution_result.final_response.output_mode == OutputMode.CHART:
+                generated_image = execution_result.final_response.artifacts[0].path if execution_result.final_response.artifacts else None
 
             assistant_message = self._create_message(
                 session=session,
                 chat_id=chat_id,
                 role="assistant",
                 content=assistant_content,
-                generated_code=generated_code,
+                generated_code=None,
                 generated_image=generated_image,
             )
 
-            return self._message_to_out(assistant_message)
+            return ChatTurnResponse(
+                status=execution_result.status,  # type: ignore[arg-type]
+                assistant_message=self._message_to_out(assistant_message),
+                final_response=execution_result.final_response,
+                interrupt=execution_result.interrupt,
+            )
 
     def get_messages(self, chat_id: int) -> List[MessageOut]:
         """Get all messages for a chat."""
         with Session(self.engine) as session:
-            # Check if chat exists
             chat = session.get(ChatDB, chat_id)
             if not chat:
                 raise HTTPException(status_code=404, detail="Chat not found")
@@ -213,3 +206,28 @@ class ChatService:
             statement = select(MessageDB).where(MessageDB.chat_id == chat_id).order_by(asc(cast(Any, MessageDB.created_at)))
             messages = session.exec(statement).all()
             return [self._message_to_out(msg) for msg in messages]
+
+    def _assistant_content_from_execution(self, execution_result) -> str:
+        if execution_result.interrupt is not None:
+            options = ", ".join(execution_result.interrupt.options)
+            suffix = f" Optionen: {options}" if options else ""
+            return f"{execution_result.interrupt.question}{suffix}"
+        if execution_result.final_response is not None:
+            return execution_result.final_response.message
+        return "(keine Antwort generiert)"
+
+    def _last_assistant_looks_like_clarification(self, messages: list[MessageDB]) -> bool:
+        if not messages:
+            return False
+
+        for message in reversed(messages):
+            if message.role != "assistant":
+                continue
+            text = message.content.lower()
+            return (
+                "welche felder soll ich verwenden" in text
+                or "ich benötige eine klärung" in text
+                or "welche" in text and "spalte" in text
+                or "optionen:" in text
+            )
+        return False

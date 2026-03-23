@@ -17,6 +17,8 @@ def get_dataset_service() -> DatasetService:
     return DatasetService(storage)
 
 
+@lru_cache()
 def get_chat_service() -> ChatService:
+    settings = get_settings()
     dataset_service = get_dataset_service()
-    return ChatService(dataset_service=dataset_service)
+    return ChatService(dataset_service=dataset_service, storage_dir=settings.storage_dir)

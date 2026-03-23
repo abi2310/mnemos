@@ -10,6 +10,7 @@ class Settings:
     max_upload_size: int = 50 * 1024 * 1024  # 50 MB
     allowed_extensions: tuple = (".csv", ".xlsx", ".parquet", ".json")
     database_url: str = "sqlite:///./mnemos.db"
+    openai_model_name: str = "gpt-4o-mini"
 
 
 @lru_cache()
