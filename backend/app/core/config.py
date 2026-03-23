@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 from dataclasses import dataclass
+from dotenv import load_dotenv
 
 
 @dataclass
@@ -13,6 +14,9 @@ class Settings:
 
 @lru_cache()
 def get_settings() -> Settings:
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    load_dotenv(env_path)
+
     settings = Settings()
     settings.storage_dir.mkdir(parents=True, exist_ok=True)
     return settings

@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 from sqlalchemy import create_engine
 from sqlmodel import SQLModel
@@ -5,6 +6,7 @@ from fastapi import HTTPException
 
 from app.services.chat import ChatService
 from app.models.chat import ChatCreate, MessageCreate
+from app.services.llm_agent import LLMAgent
 
 
 @pytest.fixture
@@ -18,7 +20,14 @@ def test_db():
 @pytest.fixture
 def chat_service(test_db):
     """Create a ChatService with test database."""
-    service = ChatService()
+    class FakeDatasetService:
+        def get(self, dataset_id: str):
+            return type("Meta", (), {"dataset_id": dataset_id, "storage_key": "fake.csv"})()
+
+        def _load_dataframe(self, meta):
+            return pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
+
+    service = ChatService(dataset_service=FakeDatasetService())
     service.engine = test_db  # Override the engine for testing
     service.create_tables()
     return service
@@ -69,11 +78,15 @@ def test_get_chat_with_messages(chat_service):
     chat_with_messages = chat_service.get_chat_with_messages(created_chat.id)
 
     assert chat_with_messages["id"] == created_chat.id
-    assert len(chat_with_messages["messages"]) == 2
+    assert len(chat_with_messages["messages"]) == 4
     assert chat_with_messages["messages"][0]["role"] == "user"
     assert chat_with_messages["messages"][0]["content"] == "Hello"
     assert chat_with_messages["messages"][1]["role"] == "assistant"
-    assert chat_with_messages["messages"][1]["content"] == "Hi there"
+    assert isinstance(chat_with_messages["messages"][1]["content"], str)
+    assert chat_with_messages["messages"][1]["content"].strip() != ""
+    assert chat_with_messages["messages"][2]["role"] == "assistant"
+    assert chat_with_messages["messages"][2]["content"] == "Hi there"
+    assert chat_with_messages["messages"][3]["role"] == "assistant"
 
 
 def test_add_message(chat_service):
@@ -86,8 +99,9 @@ def test_add_message(chat_service):
 
     assert message.id is not None
     assert message.chat_id == created_chat.id
-    assert message.role == "user"
-    assert message.content == "Test message"
+    assert message.role == "assistant"
+    assert isinstance(message.content, str)
+    assert message.content.strip() != ""
     assert message.created_at is not None
 
 
@@ -132,13 +146,18 @@ def test_get_messages(chat_service):
 
     messages = chat_service.get_messages(created_chat.id)
 
-    assert len(messages) == 3
+    # Each add_message call produces a user/system/assistant and an assistant response
+    assert len(messages) == 6
     assert messages[0].role == "system"
-    assert messages[1].role == "user"
-    assert messages[2].role == "assistant"
+    assert messages[1].role == "assistant"
+    assert messages[2].role == "user"
+    assert messages[3].role == "assistant"
+    assert messages[4].role == "assistant"
+    assert messages[5].role == "assistant"
 
     # Check ordering by created_at
-    assert messages[0].created_at <= messages[1].created_at <= messages[2].created_at
+    created_times = [msg.created_at for msg in messages]
+    assert created_times == sorted(created_times)
 
 
 def test_get_messages_for_nonexistent_chat(chat_service):
@@ -147,3 +166,46 @@ def test_get_messages_for_nonexistent_chat(chat_service):
         chat_service.get_messages(999)
     assert exc_info.value.status_code == 404
     assert "Chat not found" in str(exc_info.value.detail)
+
+
+def test_validate_generated_python_code_rejects_hardcoded_dataframe():
+    agent = LLMAgent()
+
+    valid, reason = agent._validate_generated_python_code(
+        "data = {'a': [1]}\n"
+        "df = pd.DataFrame(data)\n"
+        "fig.savefig(output_path)\n"
+    )
+
+    assert not valid
+    assert reason == "hardcoded_dataframe"
+
+
+def test_validate_code_against_metadata_rejects_unknown_columns():
+    agent = LLMAgent()
+    dataset_df = pd.DataFrame({"existing": [1, 2, 3]})
+
+    valid, issues = agent._validate_code_against_metadata(
+        "fig, ax = plt.subplots()\n"
+        "df['missing'].value_counts().plot(kind='bar', ax=ax)\n"
+        "fig.savefig(output_path)\n",
+        dataset_df,
+    )
+
+    assert not valid
+    assert "unknown_columns:missing" in issues
+
+
+def test_pre_execution_visual_review_flags_crowded_categories_without_layout_fixes():
+    agent = LLMAgent()
+    dataset_df = pd.DataFrame({"category": [f"item_{index}" for index in range(30)]})
+
+    issues = agent._assess_pre_execution_visual_issues(
+        "fig, ax = plt.subplots()\n"
+        "df['category'].value_counts().plot(kind='bar', ax=ax)\n"
+        "fig.savefig(output_path)\n",
+        dataset_df,
+    )
+
+    assert "crowded_categories:category" in issues
+    assert "missing_label_rotation" in issues

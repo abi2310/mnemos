@@ -119,7 +119,12 @@ class DatasetService:
         
         return meta
     
-    def _load_dataframe(self, meta: DatasetOut, use_cleaned: bool = False) -> pd.DataFrame:
+    def _load_dataframe(
+        self,
+        meta: DatasetOut,
+        use_cleaned: bool = False,
+        max_rows: int | None = None,
+    ) -> pd.DataFrame:
         storage_key = meta.storage_key
         
         if use_cleaned:
@@ -136,13 +141,17 @@ class DatasetService:
         f = self._storage.open(storage_key)
 
         if ext == ".csv":
-            df = pd.read_csv(f, nrows=10000)
+            df = pd.read_csv(f, nrows=max_rows)
         elif ext in [".xlsx", ".xls"]:
-            df = pd.read_excel(f, nrows=10000)
+            df = pd.read_excel(f, nrows=max_rows)
         elif ext == ".parquet":
-            df = pd.read_parquet(f, nrows=10000)
+            df = pd.read_parquet(f)
+            if max_rows is not None:
+                df = df.head(max_rows)
         elif ext == ".json":
-            df = pd.read_json(f, nrows=10000)
+            df = pd.read_json(f)
+            if max_rows is not None:
+                df = df.head(max_rows)
         else:
             raise HTTPException(status_code=400, detail=f"Schema-Erkennung für '{ext}' nicht unterstützt")
         
@@ -164,7 +173,7 @@ class DatasetService:
         if not meta:
             raise HTTPException(status_code=404, detail="Dataset not found")
 
-        df = self._load_dataframe(meta)
+        df = self._load_dataframe(meta, max_rows=10000)
 
         columns = []
         for col_name, dtype in df.dtypes.items():
@@ -191,10 +200,7 @@ class DatasetService:
         if not meta:
             raise HTTPException(status_code=404, detail="Dataset not found")
 
-        df = self._load_dataframe(meta, use_cleaned=use_cleaned)
-        
-        if len(df) > limit:
-            df = df.head(limit)
+        df = self._load_dataframe(meta, use_cleaned=use_cleaned, max_rows=limit)
             
         df = df.fillna('?')
         

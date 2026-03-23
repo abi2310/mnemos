@@ -18,4 +18,5 @@ def get_dataset_service() -> DatasetService:
 
 
 def get_chat_service() -> ChatService:
-    return ChatService()
+    dataset_service = get_dataset_service()
+    return ChatService(dataset_service=dataset_service)
