@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from typing import List
+from typing import Any, List, cast
+from sqlalchemy import asc
 from sqlmodel import Session, select, create_engine
 from fastapi import HTTPException
 
@@ -27,6 +28,7 @@ class ChatService:
             session.add(chat)
             session.commit()
             session.refresh(chat)
+            assert chat.id is not None
             return ChatOut(
                 id=chat.id,
                 dataset_id=chat.dataset_id,
@@ -40,6 +42,7 @@ class ChatService:
             chat = session.get(ChatDB, chat_id)
             if not chat:
                 raise HTTPException(status_code=404, detail="Chat not found")
+            assert chat.id is not None
             return ChatOut(
                 id=chat.id,
                 dataset_id=chat.dataset_id,
@@ -55,7 +58,7 @@ class ChatService:
                 raise HTTPException(status_code=404, detail="Chat not found")
 
             # Load messages
-            statement = select(MessageDB).where(MessageDB.chat_id == chat_id).order_by(MessageDB.created_at)
+            statement = select(MessageDB).where(MessageDB.chat_id == chat_id).order_by(asc(cast(Any, MessageDB.created_at)))
             messages = session.exec(statement).all()
 
             return {
@@ -95,9 +98,10 @@ class ChatService:
 
             session.commit()
             session.refresh(message)
+            assert message.id is not None
 
             return MessageOut(
-                id=message.id,
+                id=cast(int, message.id),
                 chat_id=message.chat_id,
                 role=message.role,
                 content=message.content,
@@ -112,12 +116,12 @@ class ChatService:
             if not chat:
                 raise HTTPException(status_code=404, detail="Chat not found")
 
-            statement = select(MessageDB).where(MessageDB.chat_id == chat_id).order_by(MessageDB.created_at)
+            statement = select(MessageDB).where(MessageDB.chat_id == chat_id).order_by(asc(cast(Any, MessageDB.created_at)))
             messages = session.exec(statement).all()
 
             return [
                 MessageOut(
-                    id=msg.id,
+                    id=cast(int, msg.id),
                     chat_id=msg.chat_id,
                     role=msg.role,
                     content=msg.content,
