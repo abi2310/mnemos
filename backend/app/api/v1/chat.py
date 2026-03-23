@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from app.models.chat import ChatCreate, ChatOut, MessageCreate, MessageOut
+from app.schemas.chat_api import ChatTurnResponse
 from app.services.chat import ChatService
 from app.core.dependencies import get_chat_service
 
@@ -26,7 +27,7 @@ async def get_chat(
     return chat_svc.get_chat_with_messages(chat_id)
 
 
-@router.post("/chats/{chat_id}/messages", response_model=MessageOut, status_code=201)
+@router.post("/chats/{chat_id}/messages", response_model=ChatTurnResponse, status_code=201)
 async def add_message(
     chat_id: int,
     message_data: MessageCreate,

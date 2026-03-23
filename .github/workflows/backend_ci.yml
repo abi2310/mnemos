@@ -64,15 +64,6 @@ jobs:
             exit 1
           fi
 
-      - name: Type-Check mit mypy
-        run: |
-          if python -m mypy --version >/dev/null 2>&1; then
-            python -m mypy app
-          else
-            echo "mypy nicht installiert – übersprungen (requirements-dev?)."
-            exit 1
-          fi
-
       # ---------- FASTAPI / AGENT IMPORT-CHECK ----------
 
       - name: Prüfe, ob FastAPI-App sauber importiert

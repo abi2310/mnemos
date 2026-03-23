@@ -24,7 +24,7 @@ def chat_service(test_db):
         def get(self, dataset_id: str):
             return type("Meta", (), {"dataset_id": dataset_id, "storage_key": "fake.csv"})()
 
-        def _load_dataframe(self, meta):
+        def _load_dataframe(self, meta, use_cleaned: bool = False, max_rows: int | None = None):
             return pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
 
     service = ChatService(dataset_service=FakeDatasetService())
@@ -69,7 +69,7 @@ def test_get_chat_with_messages(chat_service):
     created_chat = chat_service.create_chat(chat_data)
 
     # Add some messages
-    msg1 = MessageCreate(role="user", content="Hello")
+    msg1 = MessageCreate(role="user", content="Summarize col1 and col2 for this dataset")
     msg2 = MessageCreate(role="assistant", content="Hi there")
 
     chat_service.add_message(created_chat.id, msg1)
@@ -78,15 +78,14 @@ def test_get_chat_with_messages(chat_service):
     chat_with_messages = chat_service.get_chat_with_messages(created_chat.id)
 
     assert chat_with_messages["id"] == created_chat.id
-    assert len(chat_with_messages["messages"]) == 4
+    assert len(chat_with_messages["messages"]) == 3
     assert chat_with_messages["messages"][0]["role"] == "user"
-    assert chat_with_messages["messages"][0]["content"] == "Hello"
+    assert chat_with_messages["messages"][0]["content"] == "Summarize col1 and col2 for this dataset"
     assert chat_with_messages["messages"][1]["role"] == "assistant"
     assert isinstance(chat_with_messages["messages"][1]["content"], str)
     assert chat_with_messages["messages"][1]["content"].strip() != ""
     assert chat_with_messages["messages"][2]["role"] == "assistant"
     assert chat_with_messages["messages"][2]["content"] == "Hi there"
-    assert chat_with_messages["messages"][3]["role"] == "assistant"
 
 
 def test_add_message(chat_service):
@@ -94,15 +93,18 @@ def test_add_message(chat_service):
     chat_data = ChatCreate(dataset_id="dataset456")
     created_chat = chat_service.create_chat(chat_data)
 
-    msg_data = MessageCreate(role="user", content="Test message")
-    message = chat_service.add_message(created_chat.id, msg_data)
+    msg_data = MessageCreate(role="user", content="Summarize col1 and col2 for this dataset")
+    response = chat_service.add_message(created_chat.id, msg_data)
 
-    assert message.id is not None
-    assert message.chat_id == created_chat.id
-    assert message.role == "assistant"
-    assert isinstance(message.content, str)
-    assert message.content.strip() != ""
-    assert message.created_at is not None
+    assert response.status == "completed"
+    assert response.assistant_message is not None
+    assert response.assistant_message.id is not None
+    assert response.assistant_message.chat_id == created_chat.id
+    assert response.assistant_message.role == "assistant"
+    assert isinstance(response.assistant_message.content, str)
+    assert response.assistant_message.content.strip() != ""
+    assert response.assistant_message.created_at is not None
+    assert response.final_response is not None
 
 
 def test_add_message_updates_chat_timestamp(chat_service):
@@ -112,7 +114,7 @@ def test_add_message_updates_chat_timestamp(chat_service):
 
     original_updated_at = created_chat.updated_at
 
-    msg_data = MessageCreate(role="user", content="Test message")
+    msg_data = MessageCreate(role="user", content="Summarize col1 and col2 for this dataset")
     chat_service.add_message(created_chat.id, msg_data)
 
     # Get the chat again to check updated_at
@@ -137,7 +139,7 @@ def test_get_messages(chat_service):
     # Add messages
     messages_data = [
         MessageCreate(role="system", content="System prompt"),
-        MessageCreate(role="user", content="User question"),
+        MessageCreate(role="user", content="Summarize col1 and col2 for this dataset"),
         MessageCreate(role="assistant", content="Assistant answer"),
     ]
 
@@ -146,14 +148,11 @@ def test_get_messages(chat_service):
 
     messages = chat_service.get_messages(created_chat.id)
 
-    # Each add_message call produces a user/system/assistant and an assistant response
-    assert len(messages) == 6
+    assert len(messages) == 4
     assert messages[0].role == "system"
-    assert messages[1].role == "assistant"
-    assert messages[2].role == "user"
+    assert messages[1].role == "user"
+    assert messages[2].role == "assistant"
     assert messages[3].role == "assistant"
-    assert messages[4].role == "assistant"
-    assert messages[5].role == "assistant"
 
     # Check ordering by created_at
     created_times = [msg.created_at for msg in messages]
