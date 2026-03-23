@@ -8,6 +8,7 @@ class Settings:
     storage_dir: Path = Path("./storage")
     max_upload_size: int = 50 * 1024 * 1024  # 50 MB
     allowed_extensions: tuple = (".csv", ".xlsx", ".parquet", ".json")
+    database_url: str = "sqlite:///./mnemos.db"
 
 
 @lru_cache()
