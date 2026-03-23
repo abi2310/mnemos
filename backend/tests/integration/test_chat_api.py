@@ -13,7 +13,6 @@ def test_db():
     """Create a temporary SQLite database for testing."""
     import tempfile
     import os
-    from app.models.chat import ChatDB, MessageDB  # Import to register models
 
     fd, path = tempfile.mkstemp(suffix='.db')
     os.close(fd)  # Close the file descriptor

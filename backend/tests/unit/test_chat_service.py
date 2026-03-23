@@ -1,6 +1,6 @@
 import pytest
 from sqlalchemy import create_engine
-from sqlmodel import Session, SQLModel
+from sqlmodel import SQLModel
 from fastapi import HTTPException
 
 from app.services.chat import ChatService
@@ -10,7 +10,6 @@ from app.models.chat import ChatCreate, MessageCreate
 @pytest.fixture
 def test_db():
     """Create an in-memory SQLite database for testing."""
-    from app.models.chat import ChatDB, MessageDB  # Import to register models
     engine = create_engine("sqlite:///:memory:", echo=False)
     SQLModel.metadata.create_all(engine)
     return engine

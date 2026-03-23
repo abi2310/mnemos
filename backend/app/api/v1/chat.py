@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.models.chat import ChatCreate, ChatOut, MessageCreate, MessageOut
 from app.services.chat import ChatService

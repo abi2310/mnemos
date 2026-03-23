@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List
 from sqlmodel import Session, select, create_engine
 from fastapi import HTTPException
 
