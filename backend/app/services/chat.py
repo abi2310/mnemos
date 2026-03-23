@@ -133,7 +133,7 @@ class ChatService:
                 raise HTTPException(status_code=404, detail="Chat not found")
 
             # Persist user message in chat
-            user_message = self._create_message(
+            self._create_message(
                 session=session,
                 chat_id=chat_id,
                 role=message_data.role,

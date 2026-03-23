@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from sqlmodel import SQLModel, Field as SQLField
 
 
