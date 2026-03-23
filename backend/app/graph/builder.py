@@ -7,6 +7,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.graph.nodes import AnalysisNodes, GraphDependencies
 from app.state.workflow import WorkflowState
+from app.schemas.agent import OutputMode
 
 
 NodeCallable = Callable[[WorkflowState], dict]
@@ -29,6 +30,10 @@ def build_agent_graph(deps: GraphDependencies):
     graph.add_node("finalize_response", _safe(nodes.finalize_response))
     graph.add_node("handle_error", _safe(nodes.handle_error))
 
+    graph.add_node("generate_free_code", _safe(nodes.generate_free_code))
+    graph.add_node("execute_sandbox", _safe(nodes.execute_sandbox))
+    graph.add_node("review_sandbox_output", _safe(nodes.review_sandbox_output))
+
     graph.add_edge(START, "ingest_request")
     graph.add_edge("ingest_request", "profile_dataset")
     graph.add_conditional_edges("profile_dataset", _route_after_profile_dataset)
@@ -42,6 +47,9 @@ def build_agent_graph(deps: GraphDependencies):
     graph.add_conditional_edges("review_output", _route_after_review)
     graph.add_edge("finalize_response", END)
     graph.add_edge("handle_error", END)
+    graph.add_conditional_edges("generate_free_code", _route_after_free_code)
+    graph.add_conditional_edges("execute_sandbox", _route_after_sandbox_execution)
+    graph.add_conditional_edges("review_sandbox_output", _route_after_code_review)
     return graph
 
 
@@ -74,6 +82,8 @@ def _route_after_plan(state: WorkflowState) -> str:
         return "handle_error"
     if state.approval_required and state.approved is not True:
         return "approval_gate"
+    if state.output_mode == OutputMode.FREE_CODE:
+        return "generate_free_code"
     return "generate_output_spec"
 
 
@@ -82,6 +92,8 @@ def _route_after_approval(state: WorkflowState) -> str:
         return "handle_error"
     if state.approved is False:
         return "finalize_response"
+    if state.output_mode == OutputMode.FREE_CODE:
+        return "generate_free_code"
     return "generate_output_spec"
 
 
@@ -114,4 +126,21 @@ def _route_after_review(state: WorkflowState) -> str:
         return "handle_error"
     if state.review_issues and state.review_attempts < 2:
         return "generate_output_spec"
+    return "finalize_response"
+
+
+def _route_after_free_code(state: WorkflowState) -> str:
+    return "handle_error" if state.error else "execute_sandbox"
+
+
+def _route_after_sandbox_execution(state: WorkflowState) -> str:
+    return "handle_error" if state.error else "review_sandbox_output"
+
+
+def _route_after_code_review(state: WorkflowState) -> str:
+    if state.error:
+        return "handle_error"
+    review = state.code_review_result
+    if review and not review.approved and state.sandbox_attempts < 2:
+        return "generate_free_code"
     return "finalize_response"

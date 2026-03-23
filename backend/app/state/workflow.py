@@ -9,13 +9,16 @@ from app.schemas.agent import (
     ArtifactRef,
     ChartSpec,
     ChatHistoryItem,
+    CodeReviewResult,
     DatasetProfile,
     DatasetSchemaField,
     FinalResponse,
+    FreeCodeSpec,
     IntentResult,
     InterruptKind,
     OutputMode,
     ReviewIssue,
+    SandboxResult,
     TextAnswerSpec,
     ValidationIssue,
 )
@@ -53,3 +56,7 @@ class WorkflowState(BaseModel):
     should_request_clarification: bool = False
     spec_revision_context: list[str] = Field(default_factory=list)
     artifacts_metadata: dict[str, Any] = Field(default_factory=dict)
+    free_code_spec: FreeCodeSpec | None = None
+    sandbox_result: SandboxResult | None = None
+    code_review_result: CodeReviewResult | None = None
+    sandbox_attempts: int = 0

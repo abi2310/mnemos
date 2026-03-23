@@ -295,3 +295,6 @@ def test_chat_with_messages_integration(client):
     assert body["messages"][3]["role"] == "user"
     assert body["messages"][3]["content"] == "Create a bar chart for col1 by col2"
     assert body["messages"][4]["role"] == "assistant"
+    assert body["messages"][4]["generated_code"] is not None
+    assert isinstance(body["messages"][4]["generated_code"], str)
+    assert body["messages"][4]["generated_code"].strip() != ""

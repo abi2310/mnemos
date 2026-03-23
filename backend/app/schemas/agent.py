@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 class OutputMode(str, Enum):
     TEXT = "text"
     CHART = "chart"
+    FREE_CODE = "free_code"
 
 
 class InterruptKind(str, Enum):
@@ -35,6 +36,12 @@ class AggregationOp(str, Enum):
 class SortDirection(str, Enum):
     ASC = "asc"
     DESC = "desc"
+
+
+class ComplexityLevel(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
 class ArtifactType(str, Enum):
@@ -142,6 +149,27 @@ class TextAnswerSpec(BaseModel):
     rationale: str
     cited_columns: list[str] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
+
+
+class FreeCodeSpec(BaseModel):
+    code: str
+    artifact_filename: str = ""
+    code_goal: str
+    rationale: str
+
+
+class SandboxResult(BaseModel):
+    success: bool
+    stdout: str = ""
+    stderr: str = ""
+    artifact_path: str | None = None
+    exit_code: int = 0
+
+
+class CodeReviewResult(BaseModel):
+    approved: bool
+    issues: list["ReviewIssue"] = Field(default_factory=list)
+    revision_hint: str | None = None
 
 
 class ValidationIssue(BaseModel):

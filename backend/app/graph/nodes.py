@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import mimetypes
 import re
+import shutil
+import subprocess
+import sys
+import tempfile
 
 from langgraph.types import interrupt
 
@@ -14,6 +19,11 @@ from app.schemas.agent import (
     InterruptKind,
     OutputMode,
     ReviewIssue,
+    ArtifactRef,
+    ArtifactType,
+    CodeReviewResult,
+    FreeCodeSpec,
+    SandboxResult,
 )
 from app.services.dataset_profiler import DatasetProfiler
 from app.services.datasets import DatasetService
@@ -35,6 +45,12 @@ class AnalysisNodes:
     def __init__(self, deps: GraphDependencies):
         self.deps = deps
 
+    def _normalize_output_mode(self, mode: OutputMode | None) -> OutputMode | None:
+        # Path B removed: every visual/chart request is handled via sandboxed free code.
+        if mode == OutputMode.CHART:
+            return OutputMode.FREE_CODE
+        return mode
+
     def ingest_request(self, state: WorkflowState) -> dict:
         return {
             "error": None,
@@ -52,6 +68,10 @@ class AnalysisNodes:
             "should_regenerate_spec": False,
             "should_request_clarification": False,
             "spec_revision_context": [],
+            "free_code_spec": None,
+            "sandbox_result": None,
+            "code_review_result": None,
+            "sandbox_attempts": 0,
         }
 
     def profile_dataset(self, state: WorkflowState) -> dict:
@@ -76,9 +96,10 @@ class AnalysisNodes:
                 intent,
                 state.dataset_profile,
             )
+        normalized_mode = self._normalize_output_mode(intent.recommended_output_mode)
         return {
             "intent_result": intent,
-            "output_mode": intent.recommended_output_mode,
+            "output_mode": normalized_mode,
             "clarification_needed": clarification_needed,
             "clarification_question": clarification_request.question if clarification_request else None,
             "clarification_options": clarification_request.options if clarification_request else [],
@@ -140,12 +161,16 @@ class AnalysisNodes:
                     selected_columns.append(fallback_numeric[0])
             plan = plan.model_copy(update={"selected_columns": selected_columns})
 
+        normalized_mode = self._normalize_output_mode(plan.output_mode)
+        if normalized_mode != plan.output_mode:
+            plan = plan.model_copy(update={"output_mode": normalized_mode})
+
         approval_required = self.deps.policies.needs_approval(plan, state.dataset_profile)
         return {
             "analysis_plan": plan,
             "approval_required": approval_required,
             "approval_reason": plan.approval_reason or ("Large chart request requires explicit approval." if approval_required else None),
-            "output_mode": plan.output_mode,
+            "output_mode": normalized_mode,
         }
 
     def approval_gate(self, state: WorkflowState) -> dict:
@@ -250,6 +275,123 @@ class AnalysisNodes:
             "artifacts_metadata": {"artifact_path": str(output_path)},
         }
 
+    def generate_free_code(self, state: WorkflowState) -> dict:
+        if state.analysis_plan is None or state.dataset_profile is None:
+            raise ValueError("analysis_plan and dataset_profile are required before generate_free_code")
+        free_code_spec = self.deps.llm_service.generate_free_code(
+            state.user_question,
+            state.analysis_plan,
+            state.dataset_profile,
+            state.spec_revision_context,
+        )
+        return {
+            "free_code_spec": free_code_spec,
+            "sandbox_result": None,
+            "code_review_result": None,
+        }
+
+    def execute_sandbox(self, state: WorkflowState) -> dict:
+        if state.free_code_spec is None:
+            raise ValueError("free_code_spec is required before execute_sandbox")
+        dataset_meta = self.deps.dataset_service.get(state.dataset_id)
+        df = self.deps.dataset_service._load_dataframe(dataset_meta, use_cleaned=True)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            dataset_parquet = tmp_path / "dataset.parquet"
+            df.to_parquet(str(dataset_parquet), index=False)
+
+            artifact_filename = state.free_code_spec.artifact_filename or "artifact.png"
+            sandbox_artifact_path = tmp_path / artifact_filename
+
+            preamble = (
+                "import pandas as pd\n"
+                "import numpy as np\n"
+                "import matplotlib\n"
+                "matplotlib.use('Agg')\n"
+                "import matplotlib.pyplot as plt\n"
+                f"df = pd.read_parquet({str(dataset_parquet)!r})\n"
+                f"OUTPUT_PATH = {str(sandbox_artifact_path)!r}\n"
+            )
+            full_code = preamble + "\n" + state.free_code_spec.code
+            code_file = tmp_path / "sandbox_code.py"
+            code_file.write_text(full_code, encoding="utf-8")
+
+            try:
+                proc = subprocess.run(
+                    [sys.executable, str(code_file)],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    cwd=str(tmp_path),
+                )
+                success = proc.returncode == 0
+                stdout = proc.stdout[:4096]
+                stderr = proc.stderr[:2048]
+                exit_code = proc.returncode
+            except subprocess.TimeoutExpired:
+                return {
+                    "sandbox_result": SandboxResult(
+                        success=False,
+                        stdout="",
+                        stderr="Sandbox execution timed out after 30 seconds.",
+                        exit_code=-1,
+                    ),
+                    "sandbox_attempts": state.sandbox_attempts + 1,
+                    "artifacts": [],
+                }
+
+            public_path: str | None = None
+            artifacts: list[ArtifactRef] = []
+            if success and sandbox_artifact_path.exists():
+                output_dir = self.deps.storage_dir / "images" / str(state.chat_id or "adhoc")
+                output_dir.mkdir(parents=True, exist_ok=True)
+                final_path = output_dir / f"{state.request_id or 'sandbox'}_{artifact_filename}"
+                shutil.copy2(str(sandbox_artifact_path), str(final_path))
+                relative = final_path.relative_to(self.deps.storage_dir)
+                public_path = f"/storage/{relative.as_posix()}"
+                mime_type, _ = mimetypes.guess_type(artifact_filename)
+                mime_type = mime_type or "image/png"
+                artifact_type = ArtifactType.IMAGE if mime_type.startswith("image/") else ArtifactType.TEXT
+                artifacts = [
+                    ArtifactRef(
+                        artifact_type=artifact_type,
+                        path=public_path,
+                        mime_type=mime_type,
+                        description=state.free_code_spec.code_goal,
+                    )
+                ]
+
+        return {
+            "sandbox_result": SandboxResult(
+                success=success,
+                stdout=stdout,
+                stderr=stderr,
+                artifact_path=public_path,
+                exit_code=exit_code,
+            ),
+            "sandbox_attempts": state.sandbox_attempts + 1,
+            "artifacts": artifacts,
+        }
+
+    def review_sandbox_output(self, state: WorkflowState) -> dict:
+        if state.free_code_spec is None or state.sandbox_result is None:
+            raise ValueError("free_code_spec and sandbox_result are required before review_sandbox_output")
+        review = self.deps.llm_service.review_sandbox_output(
+            state.user_question,
+            state.dataset_profile,
+            state.free_code_spec,
+            state.sandbox_result,
+        )
+        revision_hints = [issue.message for issue in review.issues]
+        if review.revision_hint:
+            revision_hints.append(review.revision_hint)
+        return {
+            "code_review_result": review,
+            "review_attempts": state.review_attempts + 1,
+            "spec_revision_context": revision_hints,
+        }
+
     def review_output(self, state: WorkflowState) -> dict:
         if state.dataset_profile is None or state.chart_spec is None:
             raise ValueError("dataset_profile and chart_spec are required before review_output")
@@ -298,6 +440,28 @@ class AnalysisNodes:
                 output_mode=OutputMode.CHART,
                 artifacts=state.artifacts,
             )
+            return {"final_response": final_response}
+
+        if state.output_mode == OutputMode.FREE_CODE:
+            result = state.sandbox_result
+            if result is None:
+                raise ValueError("sandbox_result is required for FREE_CODE finalization")
+            if result.success:
+                message = result.stdout.strip() or state.free_code_spec.code_goal if state.free_code_spec else "Sandbox-Analyse abgeschlossen."
+                final_response = FinalResponse(
+                    status="completed",
+                    message=message,
+                    output_mode=OutputMode.FREE_CODE,
+                    artifacts=state.artifacts,
+                )
+            else:
+                final_response = FinalResponse(
+                    status="error",
+                    message="Sandbox-Ausführung fehlgeschlagen.",
+                    output_mode=OutputMode.FREE_CODE,
+                    artifacts=state.artifacts,
+                    error=result.stderr[:300] or "unknown_sandbox_error",
+                )
             return {"final_response": final_response}
 
         raise ValueError("Unable to finalize response without a text answer or chart artifact")

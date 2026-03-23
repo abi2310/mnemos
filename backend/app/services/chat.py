@@ -176,16 +176,25 @@ class ChatService:
                 )
 
             assistant_content = self._assistant_content_from_execution(execution_result)
+            generated_code = execution_result.workflow_state.free_code_spec.code if execution_result.workflow_state.free_code_spec else None
             generated_image = None
-            if execution_result.final_response and execution_result.final_response.output_mode == OutputMode.CHART:
-                generated_image = execution_result.final_response.artifacts[0].path if execution_result.final_response.artifacts else None
+            if execution_result.final_response and execution_result.final_response.artifacts:
+                first_image = next(
+                    (
+                        artifact.path
+                        for artifact in execution_result.final_response.artifacts
+                        if artifact.mime_type.startswith("image/")
+                    ),
+                    None,
+                )
+                generated_image = first_image
 
             assistant_message = self._create_message(
                 session=session,
                 chat_id=chat_id,
                 role="assistant",
                 content=assistant_content,
-                generated_code=None,
+                generated_code=generated_code,
                 generated_image=generated_image,
             )
 

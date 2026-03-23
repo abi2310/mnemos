@@ -13,10 +13,14 @@ from app.schemas.agent import (
     ChartSpec,
     ChartType,
     ClarificationRequest,
+    CodeReviewResult,
     DatasetProfile,
+    FreeCodeSpec,
     IntentResult,
     OutputMode,
+    ReviewIssue,
     ReviewResult,
+    SandboxResult,
     SortDirection,
     TextAnswerSpec,
 )
@@ -165,6 +169,71 @@ class LLMService:
             fallback=fallback,
         )
 
+    def generate_free_code(
+        self,
+        question: str,
+        plan: AnalysisPlan,
+        profile: DatasetProfile,
+        revision_context: list[str] | None = None,
+    ) -> FreeCodeSpec:
+        fallback = self._heuristic_free_code(question, plan, profile)
+        return self._invoke_structured(
+            response_model=FreeCodeSpec,
+            system_prompt=(
+                "Du bist ein Analytics-Assistent. Generiere fokussierten, sicheren Python-Code "
+                "für eine isolierte Sandbox-Ausführung. "
+                "Der Code hat Zugriff auf: 'df' (pandas DataFrame) und 'OUTPUT_PATH' (str, Ausgabepfad). "
+                "Erlaubte Imports: pandas, numpy, matplotlib, seaborn. "
+                "Speichere Diagramme mit plt.savefig(OUTPUT_PATH, bbox_inches='tight') und plt.close(). "
+                "Für reine Textausgaben nutze print(). "
+                "Greife niemals auf das Netzwerk oder Dateisystempfade außerhalb von OUTPUT_PATH zu."
+            ),
+            user_prompt=(
+                f"Frage: {question}\n"
+                f"Analyseplan: {plan.model_dump_json()}\n"
+                f"Dataset-Profil: {self._profile_summary(profile)}\n"
+                f"Überarbeitungshinweise: {revision_context or []}\n"
+            ),
+            fallback=fallback,
+        )
+
+    def review_sandbox_output(
+        self,
+        question: str,
+        profile: DatasetProfile | None,
+        free_code_spec: FreeCodeSpec,
+        sandbox_result: SandboxResult,
+    ) -> CodeReviewResult:
+        if not sandbox_result.success:
+            return CodeReviewResult(
+                approved=False,
+                issues=[
+                    ReviewIssue(
+                        code="sandbox_error",
+                        message=sandbox_result.stderr[:500] or "Sandbox execution failed.",
+                    )
+                ],
+                revision_hint="Fix the execution error in the generated code.",
+            )
+        fallback = CodeReviewResult(approved=True, issues=[])
+        return self._invoke_structured(
+            response_model=CodeReviewResult,
+            system_prompt=(
+                "Du bist ein Analytics-Reviewer. Antworte immer auf Deutsch. "
+                "Überprüfe den generierten Python-Code und das Sandbox-Ergebnis. "
+                "Markiere Probleme nur, wenn sie die Qualität oder Korrektheit der Analyse beeinträchtigen."
+            ),
+            user_prompt=(
+                f"Frage: {question}\n"
+                f"Code-Ziel: {free_code_spec.code_goal}\n"
+                f"Code:\n{free_code_spec.code}\n"
+                f"Sandbox stdout:\n{sandbox_result.stdout[:1000]}\n"
+                f"Sandbox stderr:\n{sandbox_result.stderr[:500]}\n"
+                f"Artefakt erzeugt: {'ja' if sandbox_result.artifact_path else 'nein'}\n"
+            ),
+            fallback=fallback,
+        )
+
     def _invoke_structured(
         self,
         response_model: type[StructuredModel],
@@ -219,16 +288,26 @@ class LLMService:
 
     def _heuristic_intent(self, question: str, profile: DatasetProfile) -> IntentResult:
         lowered = question.lower()
-        output_mode = OutputMode.CHART if any(token in lowered for token in ("chart", "plot", "diagram", "visual")) else OutputMode.TEXT
+        _complex_keywords = (
+            "heatmap", "korrelation", "korrelationsmatrix", "regression",
+            "cluster", "pivot", "subplots", "mehrere diagramme",
+        )
+        _chart_keywords = ("chart", "plot", "diagram", "visual", "zeige", "zeichne")
+        is_complex = any(kw in lowered for kw in _complex_keywords)
+        is_chart = any(kw in lowered for kw in _chart_keywords)
+        if is_complex or is_chart:
+            output_mode = OutputMode.FREE_CODE
+        else:
+            output_mode = OutputMode.TEXT
         referenced_columns = [column.name for column in profile.columns if column.name.lower() in lowered]
         requires_clarification = (
-            (output_mode == OutputMode.CHART and len(question.split()) < 4)
+            (output_mode == OutputMode.FREE_CODE and len(question.split()) < 4)
             or ("best" in lowered and not referenced_columns)
             or ("compare" in lowered and len(referenced_columns) < 2 and len(profile.numeric_columns) > 1)
         )
         multiple_valid_solutions = "trend" in lowered and bool(profile.time_columns) and len(profile.numeric_columns) > 1
         approaches = []
-        if output_mode == OutputMode.CHART:
+        if output_mode in {OutputMode.CHART, OutputMode.FREE_CODE}:
             approaches.append("grouped comparison chart")
             if profile.time_columns:
                 approaches.append("time trend chart")
@@ -259,7 +338,7 @@ class LLMService:
     ) -> AnalysisPlan:
         selected_columns = intent.referenced_columns[:]
         if not selected_columns:
-            if intent.recommended_output_mode == OutputMode.CHART and profile.categorical_columns:
+            if intent.recommended_output_mode == OutputMode.FREE_CODE and profile.categorical_columns:
                 selected_columns.append(profile.categorical_columns[0])
             if profile.numeric_columns:
                 selected_columns.append(profile.numeric_columns[0])
@@ -274,7 +353,7 @@ class LLMService:
             ],
             selected_columns=selected_columns,
             filters=[],
-            aggregations=[AggregationOp.COUNT] if intent.recommended_output_mode == OutputMode.CHART else [],
+            aggregations=[AggregationOp.COUNT] if intent.recommended_output_mode == OutputMode.FREE_CODE else [],
             output_mode=intent.recommended_output_mode,
             approval_required=approval_required,
             approval_reason="The clarification answer marked this as sensitive." if approval_required else None,
@@ -325,4 +404,40 @@ class LLMService:
             rationale="The answer is structured from the dataset profile and selected plan, without generating executable code.",
             cited_columns=cited_columns,
             caveats=["This fallback answer does not compute live statistics without an execution node."],
+        )
+
+    def _heuristic_free_code(
+        self, question: str, plan: AnalysisPlan, profile: DatasetProfile
+    ) -> FreeCodeSpec:
+        selected = plan.selected_columns[:2] if plan.selected_columns else profile.numeric_columns[:2]
+        if len(selected) >= 2:
+            code = (
+                f"fig, ax = plt.subplots(figsize=(10, 6))\n"
+                f"ax.scatter(df[{selected[0]!r}], df[{selected[1]!r}], alpha=0.7)\n"
+                f"ax.set_xlabel({selected[0]!r})\n"
+                f"ax.set_ylabel({selected[1]!r})\n"
+                f"ax.set_title({question[:60]!r})\n"
+                f"plt.tight_layout()\n"
+                f"plt.savefig(OUTPUT_PATH, bbox_inches='tight')\n"
+                f"plt.close()\n"
+            )
+            artifact_filename = "chart.png"
+        elif selected:
+            code = (
+                f"fig, ax = plt.subplots(figsize=(10, 6))\n"
+                f"df[{selected[0]!r}].hist(ax=ax, bins=20)\n"
+                f"ax.set_title({question[:60]!r})\n"
+                f"plt.tight_layout()\n"
+                f"plt.savefig(OUTPUT_PATH, bbox_inches='tight')\n"
+                f"plt.close()\n"
+            )
+            artifact_filename = "chart.png"
+        else:
+            code = "print(df.describe().to_string())\n"
+            artifact_filename = ""
+        return FreeCodeSpec(
+            code=code,
+            artifact_filename=artifact_filename,
+            code_goal=f"Exploratory analysis: {question[:80]}",
+            rationale="Heuristic fallback: LLM not available.",
         )
