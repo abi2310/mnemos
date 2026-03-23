@@ -21,6 +21,8 @@ class MessageDB(SQLModel, table=True):
     role: str  # "system", "user", "assistant"
     content: str
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
+    generated_code: Optional[str] = SQLField(default=None)
+    generated_image: Optional[str] = SQLField(default=None)
 
     chat: Optional[ChatDB] = Relationship(back_populates="messages")
 
@@ -61,3 +63,5 @@ class MessageOut(BaseModel):
     role: str
     content: str
     created_at: datetime
+    generated_code: str | None = None
+    generated_image: str | None = None

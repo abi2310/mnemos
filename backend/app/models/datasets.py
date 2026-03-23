@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel
-
-from typing import List
+from typing import List, Optional
+from sqlmodel import SQLModel, Field as SQLField
 
 
 class ColumnSchema(BaseModel):
@@ -18,6 +18,14 @@ class DatasetSchema(BaseModel):
 class DatasetStatus(str, Enum):
     uploaded = "uploaded"
     deleted = "deleted"
+
+class DatasetDB(SQLModel, table=True):
+    dataset_id: str = SQLField(primary_key=True)
+    original_name: str
+    size_bytes: int
+    status: DatasetStatus = SQLField(default=DatasetStatus.uploaded)
+    created_at: datetime = SQLField(default_factory=datetime.utcnow)
+    storage_key: str
 
 class DatasetOut(BaseModel):
     dataset_id: str

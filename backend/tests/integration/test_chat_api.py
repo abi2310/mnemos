@@ -28,7 +28,15 @@ def test_db():
 @pytest.fixture
 def chat_service(test_db):
     """Create a ChatService with test database."""
-    service = ChatService()
+    class FakeDatasetService:
+        def get(self, dataset_id: str):
+            return type("Meta", (), {"dataset_id": dataset_id, "storage_key": "fake.csv"})()
+
+        def _load_dataframe(self, meta):
+            import pandas as pd
+            return pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
+
+    service = ChatService(dataset_service=FakeDatasetService())
     service.engine = test_db
     # Tables are already created in test_db fixture
     return service
@@ -108,8 +116,9 @@ def test_add_message(client):
     body = resp.json()
     assert "id" in body
     assert body["chat_id"] == chat_id
-    assert body["role"] == "user"
-    assert body["content"] == "Hello, world!"
+    assert body["role"] == "assistant"
+    assert isinstance(body["content"], str)
+    assert body["content"].strip() != ""
     assert "created_at" in body
 
 
@@ -146,13 +155,15 @@ def test_get_messages(client):
     assert resp.status_code == 200, resp.text
 
     body = resp.json()
-    assert len(body) == 3
+    assert len(body) == 6
     assert body[0]["role"] == "system"
     assert body[0]["content"] == "You are a helpful assistant."
-    assert body[1]["role"] == "user"
-    assert body[1]["content"] == "What is 2+2?"
-    assert body[2]["role"] == "assistant"
-    assert body[2]["content"] == "2+2 equals 4."
+    assert body[1]["role"] == "assistant"
+    assert body[2]["role"] == "user"
+    assert body[2]["content"] == "What is 2+2?"
+    assert body[3]["role"] == "assistant"
+    assert body[4]["role"] == "assistant"
+    assert body[5]["role"] == "assistant"
 
 
 def test_get_messages_for_nonexistent_chat(client):
@@ -187,9 +198,14 @@ def test_chat_with_messages_integration(client):
     body = resp.json()
     assert body["id"] == chat_id
     assert body["dataset_id"] == "testdataset"
-    assert len(body["messages"]) == 3
+    assert len(body["messages"]) == 6
 
-    # Check messages are in order
+    # Check messages are in order and expected roles
+    assert body["messages"][0]["role"] == "user"
     assert body["messages"][0]["content"] == "First message"
-    assert body["messages"][1]["content"] == "First response"
-    assert body["messages"][2]["content"] == "Second message"
+    assert body["messages"][1]["role"] == "assistant"
+    assert body["messages"][2]["role"] == "assistant"
+    assert body["messages"][3]["role"] == "assistant"
+    assert body["messages"][4]["role"] == "user"
+    assert body["messages"][4]["content"] == "Second message"
+    assert body["messages"][5]["role"] == "assistant"

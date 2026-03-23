@@ -2,14 +2,17 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1 import datasets as datasets_router
 from app.api.v1 import chat as chat_router
+from app.core.config import get_settings
 
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 
 app = FastAPI(title="mnemos API")
+settings = get_settings()
 
 
 app.add_middleware(
@@ -23,6 +26,7 @@ app.add_middleware(
 
 app.include_router(datasets_router.router, prefix="/api/v1")
 app.include_router(chat_router.router, prefix="/api/v1")
+app.mount("/storage", StaticFiles(directory=str(settings.storage_dir)), name="storage")
 
 
 @app.get("/")
