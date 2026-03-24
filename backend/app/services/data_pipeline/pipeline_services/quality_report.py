@@ -10,7 +10,6 @@ from app.services.storage import StorageService
 
 PipelineContext = Dict[str, Any]
 
-# API Endpoint: @router.get("/datasets/{dataset_id}/quality-report"
 
 def _build_report(context: PipelineContext) -> Dict[str, Any]:
     # Aggregate outputs from pipeline steps into a single report payload.
