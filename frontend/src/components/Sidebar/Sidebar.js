@@ -22,8 +22,7 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >
-      {isExpanded && (
-        <>
+      <div style={{ display: isExpanded ? 'contents' : 'none' }}>
           <nav className="sidebar-main-nav">
             <button className={`sidebar-nav-item ${activePage === 'home' ? 'sidebar-nav-item--active' : ''}`} onClick={() => onPageChange('home')}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -46,22 +45,18 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
             </button>
           </nav>
 
-          {showChat && (
-            <div className="sidebar-chat-section">
-              <ChatPanel
-                onNewChat={handleNewChat}
-                onChatSelect={handleChatSelect}
-                hideNav={true}
-                hideUserProfile={true}
-              />
+          <div className="sidebar-chat-section" style={{ display: showChat ? 'flex' : 'none', flexDirection: 'column' }}>
+            <ChatPanel
+              onNewChat={handleNewChat}
+              onChatSelect={handleChatSelect}
+              hideNav={true}
+              hideUserProfile={true}
+            />
 
-              {activeChat && (
-                <div className="sidebar-chat-container">
-                  <ChatConversation key={activeChat} chatId={activeChat} />
-                </div>
-              )}
+            <div className="sidebar-chat-container" style={{ display: activeChat ? 'block' : 'none', flex: 1, overflow: 'hidden' }}>
+              <ChatConversation key={activeChat || 'default'} chatId={activeChat} />
             </div>
-          )}
+          </div>
 
           {/* User Profile */}
           <div className="sidebar-user-profile">
@@ -76,8 +71,7 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
               </svg>
             </button>
           </div>
-        </>
-      )}
+      </div>
     </aside>
   );
 }

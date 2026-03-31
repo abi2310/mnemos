@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
 import Prepare from './components/Prepare/Prepare';
@@ -16,8 +16,15 @@ function App() {
     const [activeProject, setActiveProject] = useState(null);
     const [projectName, setProjectName] = useState('');
     const [projectNameError, setProjectNameError] = useState(false);
+    const [openedProjects, setOpenedProjects] = useState([]);
     const hoverTimeoutRef = useRef(null);
     const hoverSuppressedRef = useRef(false);
+
+    useEffect(() => {
+        if (activeProject && !openedProjects.includes(activeProject.id)) {
+            setOpenedProjects(prev => [...prev, activeProject.id]);
+        }
+    }, [activeProject, openedProjects]);
 
     const handleCreateProject = () => {
         if (!projectName.trim()) {
@@ -107,20 +114,24 @@ function App() {
                 <main className="App-main">
                     {activeProject ? (
                         <>
-                            {activeTab === 'prepare' && (
-                                <Prepare hideUpload={true} />
-                            )}
+                            {openedProjects.map(projId => (
+                                <div key={`workspace-${projId}`} style={{ display: activeProject.id === projId ? 'block' : 'none', height: '100%', width: '100%' }}>
+                                    <div style={{ display: activeTab === 'prepare' ? 'block' : 'none', height: '100%', width: '100%' }}>
+                                        <Prepare hideUpload={true} />
+                                    </div>
 
-                            {activeTab === 'explore' && (
-                                <Explore />
-                            )}
+                                    <div style={{ display: activeTab === 'explore' ? 'block' : 'none', height: '100%', width: '100%' }}>
+                                        <Explore />
+                                    </div>
 
-                            {activeTab === 'predict' && (
-                                <div className="App-content">
-                                    <h1 className="App-title">Predict</h1>
-                                    <p className="App-subtitle">Create predictions and forecasts</p>
+                                    <div style={{ display: activeTab === 'predict' ? 'block' : 'none', height: '100%', width: '100%' }}>
+                                        <div className="App-content">
+                                            <h1 className="App-title">Predict</h1>
+                                            <p className="App-subtitle">Create predictions and forecasts</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
+                            ))}
                         </>
                     ) : (
                         <>

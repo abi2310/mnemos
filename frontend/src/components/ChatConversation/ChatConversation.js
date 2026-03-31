@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ChatConversation.css';
+import { chatApi } from './chatApi';
+import { getDatasets } from '../../services/DatasetService/datasetService';
 
 /**
  * ChatConversation Component
@@ -16,39 +18,100 @@ function ChatConversation({ chatId, onBack }) {
         }
     ]);
     const [inputValue, setInputValue] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [backendChatId, setBackendChatId] = useState(null);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSendMessage = (e) => {
+    const handleSendMessage = async (e) => {
         e.preventDefault();
 
-        if (!inputValue.trim()) return;
+        if (!inputValue.trim() || isLoading) return;
+
+        const text = inputValue.trim();
 
         // User-Nachricht hinzufügen
         const userMessage = {
             id: messages.length + 1,
             type: 'user',
-            text: inputValue,
+            text: text,
             timestamp: new Date()
         };
 
-        setMessages([...messages, userMessage]);
+        setMessages((prev) => [...prev, userMessage]);
         setInputValue('');
+        setIsLoading(true);
 
-        // TODO: API-Call zum Backend für KI-Antwort
-        // Placeholder-Antwort
-        setTimeout(() => {
+        try {
+            let currentChatId = backendChatId;
+
+            // Chat im Backend anlegen, falls noch nicht passiert
+            if (!currentChatId) {
+                const dbDatasets = await getDatasets();
+                if (!dbDatasets || dbDatasets.length === 0) {
+                    throw new Error('NoDatasetError');
+                }
+                const datasetId = dbDatasets[0].dataset_id;
+
+                const newChat = await chatApi.createChat(datasetId);
+                currentChatId = newChat.id;
+                setBackendChatId(currentChatId);
+            }
+
+            // Nachricht via API senden
+            const response = await chatApi.sendMessage(currentChatId, text, 'user');
+
+            let assistantText = 'Ich habe die Anfrage verarbeitet, aber keine Textantwort erhalten.';
+            let assistantArtifacts = [];
+
+            if (response.assistant_message && response.assistant_message.content) {
+                assistantText = response.assistant_message.content;
+            } else if (response.final_response && response.final_response.message) {
+                 assistantText = response.final_response.message;
+            } else if (response.content) {
+                assistantText = response.content;
+            }
+
+            // Diagramme / Bilder extrahieren
+            if (response.assistant_message && response.assistant_message.generated_image) {
+                assistantArtifacts.push({
+                    artifact_type: 'image',
+                    path: response.assistant_message.generated_image
+                });
+            } else if (response.final_response && response.final_response.artifacts) {
+                assistantArtifacts = response.final_response.artifacts;
+            }
+
             const assistantMessage = {
-                id: messages.length + 2,
+                id: response.assistant_message?.id || Date.now(),
                 type: 'assistant',
-                text: 'Ich arbeite an deiner Anfrage. Die Backend-Integration folgt noch.',
+                text: assistantText,
+                artifacts: assistantArtifacts,
                 timestamp: new Date()
             };
-            setMessages(prev => [...prev, assistantMessage]);
-        }, 1000);
+            
+            setMessages((prev) => [...prev, assistantMessage]);
+        } catch (error) {
+            console.error('Error during API call for chat:', error);
+            
+            let errorText = 'Fehler bei der Kommunikation mit dem KI Agenten. Bitte überprüfe das Backend.';
+            if (error.message === 'NoDatasetError') {
+                errorText = 'Bitte lade zuerst einen Datensatz hoch (unter dem Tab Datasets), bevor du den KI-Agenten startest.';
+            }
+
+            const errorMessage = {
+                id: Date.now(),
+                type: 'assistant',
+                text: errorText,
+                timestamp: new Date()
+            };
+            setMessages((prev) => [...prev, errorMessage]);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleKeyPress = (e) => {
@@ -72,6 +135,60 @@ function ChatConversation({ chatId, onBack }) {
                     >
                         <div className="message-content">
                             {message.text}
+                            {message.artifacts && message.artifacts.length > 0 && (
+                                <div className="message-artifacts" style={{ marginTop: '10px' }}>
+                                    {message.artifacts.map((artifact, idx) => {
+                                        if (artifact.artifact_type === 'image' || (artifact.path && artifact.path.match(/\.(jpeg|jpg|gif|png)$/i))) {
+                                            const imgUrl = `http://localhost:8000${artifact.path}`;
+                                            const imgTitle = artifact.description || 'Generiertes Diagramm';
+
+                                            const handleDragStart = (e) => {
+                                                const data = {
+                                                    type: 'artifact_image',
+                                                    url: imgUrl,
+                                                    description: imgTitle
+                                                };
+                                                e.dataTransfer.setData('application/json', JSON.stringify(data));
+                                            };
+
+                                            const handleAddToDashboard = () => {
+                                                const event = new CustomEvent('add-to-dashboard', {
+                                                    detail: {
+                                                        type: 'artifact_image',
+                                                        url: imgUrl,
+                                                        description: imgTitle
+                                                    }
+                                                });
+                                                window.dispatchEvent(event);
+                                            };
+
+                                            return (
+                                                <div key={idx} className="artifact-image-container">
+                                                    <img 
+                                                        src={imgUrl} 
+                                                        alt={imgTitle} 
+                                                        draggable="true"
+                                                        onDragStart={handleDragStart}
+                                                        className="artifact-image"
+                                                    />
+                                                    <button 
+                                                        onClick={handleAddToDashboard}
+                                                        className="add-to-dashboard-btn"
+                                                        title="Zum Dashboard hinzufügen"
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                                        </svg>
+                                                        Dashboard
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+                            )}
                         </div>
                         <div className="message-timestamp">
                             {message.timestamp.toLocaleTimeString('de-DE', {
