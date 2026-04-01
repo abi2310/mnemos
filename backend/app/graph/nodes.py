@@ -57,6 +57,7 @@ class AnalysisNodes:
             "clarification_options": [],
             "analysis_plan": None,
             "chart_spec": None,
+            "dashboard_spec": None,
             "text_answer": None,
             "validation_issues": [],
             "review_issues": [],
@@ -199,6 +200,44 @@ class AnalysisNodes:
             return {
                 "text_answer": text_answer,
                 "chart_spec": None,
+                "dashboard_spec": None,
+            }
+
+        if state.output_mode == OutputMode.DASHBOARD:
+            dashboard_spec = self.deps.llm_service.generate_dashboard_spec(
+                state.user_question,
+                state.analysis_plan,
+                state.dataset_profile,
+                state.spec_revision_context,
+            )
+            available_columns = {column.name for column in state.dataset_profile.columns}
+            clarified_columns = self._extract_clarified_columns(
+                answer=state.user_clarification_answer,
+                options=state.clarification_options,
+                profile=state.dataset_profile,
+            )
+            if clarified_columns and dashboard_spec.charts:
+                preferred_x = clarified_columns[0]
+                updated_charts = []
+                for chart in dashboard_spec.charts:
+                    if chart.x_column not in available_columns:
+                        updated_charts.append(chart.model_copy(update={"x_column": preferred_x}))
+                    else:
+                        updated_charts.append(chart)
+                dashboard_spec = dashboard_spec.model_copy(update={"charts": updated_charts})
+
+            dashboard_spec = dashboard_spec.model_copy(
+                update={
+                    "charts": [
+                        self.deps.policies.apply_chart_defaults(chart, state.dataset_profile)
+                        for chart in dashboard_spec.charts
+                    ]
+                }
+            )
+            return {
+                "dashboard_spec": dashboard_spec,
+                "chart_spec": None,
+                "text_answer": None,
             }
 
         chart_spec = self.deps.llm_service.generate_chart_spec(
@@ -223,21 +262,40 @@ class AnalysisNodes:
         chart_spec = self.deps.policies.apply_chart_defaults(chart_spec, state.dataset_profile)
         return {
             "chart_spec": chart_spec,
+            "dashboard_spec": None,
             "text_answer": None,
         }
 
     def validate_output_spec(self, state: WorkflowState) -> dict:
-        if state.dataset_profile is None or state.chart_spec is None:
-            raise ValueError("dataset_profile and chart_spec are required before validate_output_spec")
-        validation = self.deps.policies.validate_chart_spec(state.chart_spec, state.dataset_profile)
-        issue_messages = [issue.message for issue in validation.issues]
+        if state.dataset_profile is None:
+            raise ValueError("dataset_profile is required before validate_output_spec")
+
+        if state.output_mode == OutputMode.DASHBOARD:
+            if state.dashboard_spec is None:
+                raise ValueError("dashboard_spec is required before validate_output_spec")
+            validations = [
+                self.deps.policies.validate_chart_spec(chart, state.dataset_profile)
+                for chart in state.dashboard_spec.charts
+            ]
+            issues = [issue for validation in validations for issue in validation.issues]
+            issue_messages = [issue.message for issue in issues]
+            should_request_clarification = any(validation.should_reask for validation in validations)
+            clarification_needed = should_request_clarification
+            should_regenerate_spec = any(validation.should_regenerate for validation in validations)
+        else:
+            if state.chart_spec is None:
+                raise ValueError("chart_spec is required before validate_output_spec")
+            validation = self.deps.policies.validate_chart_spec(state.chart_spec, state.dataset_profile)
+            issues = validation.issues
+            issue_messages = [issue.message for issue in validation.issues]
+            should_request_clarification = validation.should_reask
+            clarification_needed = validation.should_reask
+            should_regenerate_spec = validation.should_regenerate
+
         clarification_question = state.clarification_question
         clarification_options = state.clarification_options
-        should_request_clarification = validation.should_reask
-        clarification_needed = validation.should_reask
-        should_regenerate_spec = validation.should_regenerate
 
-        if validation.should_reask:
+        if should_request_clarification:
             clarification_question = "Ich benötige eine Klärung der Spalten, bevor ich das Diagramm rendern kann. Welche Felder soll ich verwenden?"
             clarification_options = state.intent_result.referenced_columns if state.intent_result else []
             if state.user_clarification_answer:
@@ -248,7 +306,7 @@ class AnalysisNodes:
                 issue_messages.append("Use the user's clarification answer to pick valid dataset columns.")
 
         return {
-            "validation_issues": validation.issues,
+            "validation_issues": issues,
             "validation_attempts": state.validation_attempts + 1,
             "should_regenerate_spec": should_regenerate_spec,
             "should_request_clarification": should_request_clarification,
@@ -259,11 +317,30 @@ class AnalysisNodes:
         }
 
     def render_artifact(self, state: WorkflowState) -> dict:
-        if state.chart_spec is None:
-            raise ValueError("chart_spec is required before render_artifact")
         dataset_meta = self.deps.dataset_service.get(state.dataset_id)
         df = self.deps.dataset_service._load_dataframe(dataset_meta, use_cleaned=True)
-        output_path = self.deps.storage_dir / "images" / str(state.chat_id or "adhoc") / f"{state.request_id}.png"
+        output_dir = self.deps.storage_dir / "images" / str(state.chat_id or "adhoc")
+
+        if state.output_mode == OutputMode.DASHBOARD:
+            if state.dashboard_spec is None:
+                raise ValueError("dashboard_spec is required before render_artifact")
+            artifacts: list[ArtifactRef] = []
+            artifact_paths: list[str] = []
+            for index, chart in enumerate(state.dashboard_spec.charts, start=1):
+                output_path = output_dir / f"{state.request_id}_{index}.png"
+                artifact = self.deps.renderer.render(chart, df, str(output_path))
+                relative_path = output_path.relative_to(self.deps.storage_dir)
+                public_path = f"/storage/{relative_path.as_posix()}"
+                artifacts.append(artifact.model_copy(update={"path": public_path}))
+                artifact_paths.append(str(output_path))
+            return {
+                "artifacts": artifacts,
+                "artifacts_metadata": {"artifact_paths": artifact_paths},
+            }
+
+        if state.chart_spec is None:
+            raise ValueError("chart_spec is required before render_artifact")
+        output_path = output_dir / f"{state.request_id}.png"
         artifact = self.deps.renderer.render(state.chart_spec, df, str(output_path))
         relative_path = output_path.relative_to(self.deps.storage_dir)
         public_path = f"/storage/{relative_path.as_posix()}"
@@ -390,8 +467,34 @@ class AnalysisNodes:
         }
 
     def review_output(self, state: WorkflowState) -> dict:
-        if state.dataset_profile is None or state.chart_spec is None:
-            raise ValueError("dataset_profile and chart_spec are required before review_output")
+        if state.dataset_profile is None:
+            raise ValueError("dataset_profile is required before review_output")
+
+        if state.output_mode == OutputMode.DASHBOARD:
+            if state.dashboard_spec is None:
+                raise ValueError("dashboard_spec is required before review_output")
+            artifact_paths = state.artifacts_metadata.get("artifact_paths") or []
+            if len(artifact_paths) != len(state.dashboard_spec.charts):
+                raise ValueError("artifact_paths are required before dashboard review_output")
+            reviews = [
+                self.deps.llm_service.review_chart(
+                    state.user_question,
+                    state.dataset_profile,
+                    chart,
+                    artifact_path,
+                )
+                for chart, artifact_path in zip(state.dashboard_spec.charts, artifact_paths, strict=False)
+            ]
+            issues = [issue for review in reviews for issue in review.issues]
+            return {
+                "review_issues": issues,
+                "review_attempts": state.review_attempts + 1,
+                "should_regenerate_spec": any(not review.approved for review in reviews),
+                "spec_revision_context": [issue.message for issue in issues],
+            }
+
+        if state.chart_spec is None:
+            raise ValueError("chart_spec is required before review_output")
         artifact_path = state.artifacts_metadata.get("artifact_path")
         if not artifact_path:
             raise ValueError("artifact_path is required before review_output")
@@ -435,6 +538,17 @@ class AnalysisNodes:
                 status="completed",
                 message=f"Rendered chart '{state.chart_spec.title}'.{suffix}",
                 output_mode=OutputMode.CHART,
+                artifacts=state.artifacts,
+            )
+            return {"final_response": final_response}
+
+        if state.output_mode == OutputMode.DASHBOARD and state.dashboard_spec is not None:
+            issues = ", ".join(issue.message for issue in state.review_issues)
+            suffix = f" Review warnings: {issues}." if issues else ""
+            final_response = FinalResponse(
+                status="completed",
+                message=f"Rendered dashboard '{state.dashboard_spec.title}' with {len(state.artifacts)} charts.{suffix}",
+                output_mode=OutputMode.DASHBOARD,
                 artifacts=state.artifacts,
             )
             return {"final_response": final_response}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any
 
 from langgraph.errors import GraphInterrupt
 from langgraph.graph import END, START, StateGraph
@@ -10,7 +11,7 @@ from app.state.workflow import WorkflowState
 from app.schemas.agent import OutputMode
 
 
-NodeCallable = Callable[[WorkflowState], dict]
+NodeCallable = Callable[[WorkflowState], dict[str, Any]]
 
 
 def build_agent_graph(deps: GraphDependencies):
@@ -53,7 +54,7 @@ def build_agent_graph(deps: GraphDependencies):
     return graph
 
 
-def _safe(node: NodeCallable) -> NodeCallable:
+def _safe(node: NodeCallable) -> Any:
     def wrapped(state: WorkflowState) -> dict:
         try:
             return node(state)

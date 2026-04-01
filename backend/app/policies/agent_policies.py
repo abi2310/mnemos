@@ -29,7 +29,7 @@ class AgentPolicyEngine(BaseModel):
     def needs_approval(self, plan: AnalysisPlan, profile: DatasetProfile) -> bool:
         if plan.approval_required:
             return True
-        if plan.output_mode.value == "chart" and profile.row_count > 250_000:
+        if plan.output_mode.value in {"chart", "dashboard"} and profile.row_count > 250_000:
             return True
         return False
 

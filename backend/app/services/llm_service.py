@@ -5,7 +5,7 @@ from typing import TypeVar
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from app.schemas.agent import (
     AggregationOp,
@@ -14,6 +14,7 @@ from app.schemas.agent import (
     ChartType,
     ClarificationRequest,
     CodeReviewResult,
+    DashboardSpec,
     DatasetProfile,
     FreeCodeSpec,
     IntentResult,
@@ -40,7 +41,8 @@ class LLMService:
             response_model=IntentResult,
             system_prompt=(
                 "Du bist ein Analytics-Assistent. Antworte immer auf Deutsch. "
-                "Entscheide, ob der Nutzer eine Textantwort oder ein Diagramm benötigt, "
+                "Entscheide, ob der Nutzer eine Textantwort, ein einzelnes Diagramm, ein Dashboard mit mehreren Diagrammen "
+                "oder freien Code benötigt, "
                 "erkenne Mehrdeutigkeiten und halte das Ergebnis präzise und strukturiert."
             ),
             user_prompt=(
@@ -114,6 +116,31 @@ class LLMService:
                 "Du bist ein Analytics-Assistent. Antworte immer auf Deutsch. "
                 "Erstelle eine Diagrammspezifikation für deterministische Darstellung. "
                 "Wähle nur Felder, die ohne freien Code gerendert werden können."
+            ),
+            user_prompt=(
+                f"Question: {question}\n"
+                f"Plan: {plan.model_dump_json()}\n"
+                f"Dataset profile: {self._profile_summary(profile)}\n"
+                f"Revision context: {revision_context or []}\n"
+            ),
+            fallback=fallback,
+        )
+
+    def generate_dashboard_spec(
+        self,
+        question: str,
+        plan: AnalysisPlan,
+        profile: DatasetProfile,
+        revision_context: list[str] | None = None,
+    ) -> DashboardSpec:
+        fallback = self._heuristic_dashboard_spec(question, plan, profile)
+        return self._invoke_structured(
+            response_model=DashboardSpec,
+            system_prompt=(
+                "Du bist ein Analytics-Assistent. Antworte immer auf Deutsch. "
+                "Erstelle eine Dashboard-Spezifikation mit 2 bis 4 deterministisch renderbaren Diagrammen. "
+                "Wähle nur Felder, die ohne freien Code gerendert werden können. "
+                "Vermeide doppelte Diagramme mit identischer Aussage."
             ),
             user_prompt=(
                 f"Question: {question}\n"
@@ -262,7 +289,11 @@ class LLMService:
         api_key = (os.getenv("OPENAI_API_KEY") or "").strip().strip('"').strip("'")
         if not api_key:
             return None
-        return ChatOpenAI(model=self.model_name, temperature=self.temperature, api_key=api_key)
+        return ChatOpenAI(
+            model=self.model_name,
+            temperature=self.temperature,
+            api_key=SecretStr(api_key),
+        )
 
     def _profile_summary(self, profile: DatasetProfile) -> str:
         columns = [
@@ -292,10 +323,14 @@ class LLMService:
             "heatmap", "korrelation", "korrelationsmatrix", "regression",
             "cluster", "pivot", "subplots", "mehrere diagramme",
         )
+        _dashboard_keywords = ("dashboard", "mehrere grafiken", "mehrere diagramme", "mehrere charts", "cockpit")
         _chart_keywords = ("chart", "plot", "diagram", "visual", "zeige", "zeichne")
+        is_dashboard = any(kw in lowered for kw in _dashboard_keywords)
         is_complex = any(kw in lowered for kw in _complex_keywords)
         is_chart = any(kw in lowered for kw in _chart_keywords)
-        if is_complex or is_chart:
+        if is_dashboard:
+            output_mode = OutputMode.DASHBOARD
+        elif is_complex or is_chart:
             output_mode = OutputMode.FREE_CODE
         else:
             output_mode = OutputMode.TEXT
@@ -307,10 +342,12 @@ class LLMService:
         )
         multiple_valid_solutions = "trend" in lowered and bool(profile.time_columns) and len(profile.numeric_columns) > 1
         approaches = []
-        if output_mode in {OutputMode.CHART, OutputMode.FREE_CODE}:
+        if output_mode in {OutputMode.CHART, OutputMode.DASHBOARD, OutputMode.FREE_CODE}:
             approaches.append("grouped comparison chart")
             if profile.time_columns:
                 approaches.append("time trend chart")
+            if output_mode == OutputMode.DASHBOARD:
+                approaches.append("multi-chart dashboard")
         else:
             approaches.append("high-level textual summary")
             approaches.append("focused metric explanation")
@@ -392,6 +429,85 @@ class LLMService:
             top_n=10 if chart_type == ChartType.BAR else None,
             title=f"{chart_type.value.title()} for {question}",
             rationale="The spec uses profiled dataset columns and a deterministic renderer path.",
+        )
+
+    def _heuristic_dashboard_spec(
+        self,
+        question: str,
+        plan: AnalysisPlan,
+        profile: DatasetProfile,
+    ) -> DashboardSpec:
+        charts: list[ChartSpec] = []
+
+        if profile.time_columns and profile.numeric_columns:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.LINE,
+                    x_column=profile.time_columns[0],
+                    y_column=profile.numeric_columns[0],
+                    aggregation=AggregationOp.MEAN,
+                    title=f"Trend von {profile.numeric_columns[0]}",
+                    rationale="Zeitliche Entwicklung einer numerischen Kennzahl.",
+                )
+            )
+
+        if profile.categorical_columns and profile.numeric_columns:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.BAR,
+                    x_column=profile.categorical_columns[0],
+                    y_column=profile.numeric_columns[0],
+                    aggregation=AggregationOp.MEAN,
+                    sort_direction=SortDirection.DESC,
+                    top_n=10,
+                    title=f"{profile.numeric_columns[0]} nach {profile.categorical_columns[0]}",
+                    rationale="Vergleich nach Kategorie.",
+                )
+            )
+        elif profile.categorical_columns:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.BAR,
+                    x_column=profile.categorical_columns[0],
+                    aggregation=AggregationOp.COUNT,
+                    sort_direction=SortDirection.DESC,
+                    top_n=10,
+                    title=f"Haeufigkeit nach {profile.categorical_columns[0]}",
+                    rationale="Kategorienverteilung.",
+                )
+            )
+
+        if len(profile.numeric_columns) >= 2:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.SCATTER,
+                    x_column=profile.numeric_columns[0],
+                    y_column=profile.numeric_columns[1],
+                    title=f"{profile.numeric_columns[0]} vs. {profile.numeric_columns[1]}",
+                    rationale="Zusammenhang zweier numerischer Kennzahlen.",
+                )
+            )
+        elif profile.numeric_columns:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.HISTOGRAM,
+                    x_column=profile.numeric_columns[0],
+                    title=f"Verteilung von {profile.numeric_columns[0]}",
+                    rationale="Verteilungsansicht einer numerischen Kennzahl.",
+                )
+            )
+
+        unique_charts: list[ChartSpec] = []
+        seen_titles: set[str] = set()
+        for chart in charts:
+            if chart.title not in seen_titles:
+                unique_charts.append(chart)
+                seen_titles.add(chart.title)
+
+        return DashboardSpec(
+            title=f"Dashboard: {question[:80]}",
+            rationale="Mehrere komplementaere Diagramme fuer einen kompakten Ueberblick.",
+            charts=unique_charts[:4],
         )
 
     def _heuristic_text_answer(self, question: str, plan: AnalysisPlan, profile: DatasetProfile) -> TextAnswerSpec:

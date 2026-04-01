@@ -7,6 +7,7 @@ from app.schemas.agent import (
     ChartSpec,
     ChartType,
     ColumnProfile,
+    DashboardSpec,
     DatasetProfile,
     NumericSummary,
     OutputMode,
@@ -127,3 +128,48 @@ def test_clarification_gate_skips_reinterrupt_when_answer_is_usable() -> None:
 
     assert update["clarification_needed"] is False
     assert update["should_request_clarification"] is False
+
+
+def test_validate_output_spec_dashboard_uses_existing_clarification_instead_of_reasking() -> None:
+    deps = GraphDependencies(
+        dataset_service=_NoopDatasetService(),  # type: ignore[arg-type]
+        profiler=DatasetProfiler(),
+        llm_service=_NoopLLMService(),  # type: ignore[arg-type]
+        renderer=ChartRenderer(),
+        policies=AgentPolicyEngine(),
+        storage_dir=Path("/tmp"),
+    )
+    nodes = AnalysisNodes(deps)
+
+    state = WorkflowState(
+        dataset_id="dataset-test",
+        user_question="baue mir ein dashboard",
+        dataset_profile=_build_profile(),
+        output_mode=OutputMode.DASHBOARD,
+        dashboard_spec=DashboardSpec(
+            title="Test Dashboard",
+            rationale="Test rationale",
+            charts=[
+                ChartSpec(
+                    chart_type=ChartType.BAR,
+                    x_column="nicht_vorhanden",
+                    y_column="menge",
+                    aggregation=None,
+                    sort_direction=None,
+                    top_n=None,
+                    title="Chart 1",
+                    rationale="Test rationale",
+                )
+            ],
+        ),
+        clarification_question="Welche Spalte?",
+        clarification_options=["preis"],
+        user_clarification_answer="ja, preis ist korrekt",
+    )
+
+    update = nodes.validate_output_spec(state)
+
+    assert update["should_request_clarification"] is False
+    assert update["clarification_needed"] is False
+    assert update["should_regenerate_spec"] is True
+    assert any("Use the user's clarification answer" in message for message in update["spec_revision_context"])

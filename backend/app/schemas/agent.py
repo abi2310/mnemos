@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 class OutputMode(str, Enum):
     TEXT = "text"
     CHART = "chart"
+    DASHBOARD = "dashboard"
     FREE_CODE = "free_code"
 
 
@@ -142,6 +143,12 @@ class ChartSpec(BaseModel):
     rationale: str
     color_by: str | None = None
     time_grain: Literal["day", "week", "month", "quarter", "year"] | None = None
+
+
+class DashboardSpec(BaseModel):
+    title: str
+    rationale: str
+    charts: list[ChartSpec] = Field(default_factory=list)
 
 
 class TextAnswerSpec(BaseModel):
