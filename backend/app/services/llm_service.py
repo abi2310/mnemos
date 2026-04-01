@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import TypeVar
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -317,6 +318,184 @@ class LLMService:
             }
         )
 
+    def _normalize_phrase(self, text: str) -> str:
+        normalized = text.lower().replace("_", " ")
+        normalized = re.sub(r"[^a-z0-9\s]+", " ", normalized)
+        normalized = re.sub(r"\s+", " ", normalized).strip()
+        return normalized
+
+    def _expand_query_terms(self, text: str) -> str:
+        normalized = self._normalize_phrase(text)
+        replacements = {
+            "preise": "preise price prices",
+            "preis": "preis price prices",
+            "rabatt": "rabatt rabatt discount discounts",
+            "rabatte": "rabatte discount discounts",
+            "versandzeit": "versandzeit shipping delivery time",
+            "versand": "versand shipping delivery",
+            "stunden": "stunden hours",
+            "social media": "social media social_media",
+            "einkaufverhalten": "einkaufverhalten shopping purchase behavior",
+            "zahlungsverhalten": "zahlungsverhalten payment payment behavior",
+            "nutzungsverhalten": "nutzungsverhalten user behavior engagement",
+            "retouren": "retouren returns return refunds",
+            "retoure": "retoure returns return refunds",
+            "kundenchurn": "kundenchurn churn retention",
+            "groesse": "groesse size area",
+            "größe": "groesse size area",
+            "haeuser": "haeuser haus houses homes housing",
+            "häuser": "haeuser haus houses homes housing",
+        }
+        for source, target in replacements.items():
+            if source in normalized:
+                normalized = normalized.replace(source, target)
+        return normalized
+
+    def _tokenize(self, text: str) -> list[str]:
+        stopwords = {
+            "und", "oder", "mit", "von", "der", "die", "das", "den", "dem", "des",
+            "ein", "eine", "einer", "einem", "einen", "noch", "mehreren", "grafiken",
+            "grafik", "diagramm", "diagramme", "dashboard", "erstelle", "zeige",
+            "visualisiert", "visualisieren", "information", "informationen", "ueber",
+            "über", "where", "whose", "their", "the", "for", "and", "mit", "wo",
+        }
+        return [
+            token
+            for token in self._expand_query_terms(text).split()
+            if len(token) > 1 and token not in stopwords
+        ]
+
+    def _extract_referenced_columns(self, question: str, profile: DatasetProfile, limit: int = 6) -> list[str]:
+        normalized_question = self._expand_query_terms(question)
+        question_tokens = set(self._tokenize(question))
+        scored_columns: list[tuple[float, str]] = []
+
+        for column in profile.columns:
+            normalized_column = self._normalize_phrase(column.name)
+            column_tokens = set(self._tokenize(column.name))
+            score = 0.0
+
+            if normalized_column and normalized_column in normalized_question:
+                score += 10.0
+
+            overlap = question_tokens & column_tokens
+            if overlap:
+                score += float(len(overlap)) * 3.0
+                score += float(len(overlap)) / float(max(len(column_tokens), 1))
+
+            compact_column = normalized_column.replace(" ", "")
+            compact_question = normalized_question.replace(" ", "")
+            if compact_column and compact_column in compact_question:
+                score += 4.0
+
+            if score > 0:
+                scored_columns.append((score, column.name))
+
+        scored_columns.sort(key=lambda item: (-item[0], item[1]))
+        ordered: list[str] = []
+        for _, column_name in scored_columns:
+            if column_name not in ordered:
+                ordered.append(column_name)
+            if len(ordered) >= limit:
+                break
+        return ordered
+
+    def _column_map(self, profile: DatasetProfile) -> dict[str, str]:
+        return {column.name: column.semantic_type for column in profile.columns}
+
+    def _build_dashboard_candidates(self, selected_columns: list[str], profile: DatasetProfile) -> list[ChartSpec]:
+        column_types = self._column_map(profile)
+        selected_numeric = [column for column in selected_columns if column_types.get(column) == "numeric"]
+        selected_categorical = [
+            column
+            for column in selected_columns
+            if column_types.get(column) in {"categorical", "text", "boolean"}
+        ]
+        selected_time = [column for column in selected_columns if column_types.get(column) == "datetime"]
+
+        fallback_numeric = [column for column in profile.numeric_columns if column not in selected_numeric]
+        fallback_categorical = [column for column in profile.categorical_columns if column not in selected_categorical]
+        fallback_time = [column for column in profile.time_columns if column not in selected_time]
+
+        numeric_pool = selected_numeric + fallback_numeric
+        categorical_pool = selected_categorical + fallback_categorical
+        time_pool = selected_time + fallback_time
+
+        charts: list[ChartSpec] = []
+
+        if time_pool and numeric_pool:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.LINE,
+                    x_column=time_pool[0],
+                    y_column=numeric_pool[0],
+                    aggregation=AggregationOp.MEAN,
+                    title=f"Trend von {numeric_pool[0]}",
+                    rationale="Zeitlicher Verlauf einer im Prompt erwaehnten Kennzahl.",
+                )
+            )
+
+        if categorical_pool and numeric_pool:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.BAR,
+                    x_column=categorical_pool[0],
+                    y_column=numeric_pool[0],
+                    aggregation=AggregationOp.MEAN,
+                    sort_direction=SortDirection.DESC,
+                    top_n=10,
+                    title=f"{numeric_pool[0]} nach {categorical_pool[0]}",
+                    rationale="Vergleich einer angefragten Kennzahl nach Kategorie.",
+                )
+            )
+        elif categorical_pool:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.BAR,
+                    x_column=categorical_pool[0],
+                    aggregation=AggregationOp.COUNT,
+                    sort_direction=SortDirection.DESC,
+                    top_n=10,
+                    title=f"Verteilung von {categorical_pool[0]}",
+                    rationale="Kategorienverteilung aus einer angefragten Spalte.",
+                )
+            )
+
+        if len(numeric_pool) >= 2:
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.SCATTER,
+                    x_column=numeric_pool[0],
+                    y_column=numeric_pool[1],
+                    title=f"{numeric_pool[0]} vs. {numeric_pool[1]}",
+                    rationale="Zusammenhang zwischen zwei angefragten Kennzahlen.",
+                )
+            )
+
+        used_histograms = {chart.y_column for chart in charts if chart.y_column}
+        for numeric_column in numeric_pool:
+            if len(charts) >= 4:
+                break
+            if numeric_column in used_histograms:
+                continue
+            charts.append(
+                ChartSpec(
+                    chart_type=ChartType.HISTOGRAM,
+                    x_column=numeric_column,
+                    title=f"Verteilung von {numeric_column}",
+                    rationale="Verteilung einer im Prompt genannten Kennzahl.",
+                )
+            )
+
+        unique_charts: list[ChartSpec] = []
+        seen_signatures: set[tuple[str, str, str | None]] = set()
+        for chart in charts:
+            signature = (chart.chart_type.value, chart.x_column, chart.y_column)
+            if signature not in seen_signatures:
+                unique_charts.append(chart)
+                seen_signatures.add(signature)
+        return unique_charts[:4]
+
     def _heuristic_intent(self, question: str, profile: DatasetProfile) -> IntentResult:
         lowered = question.lower()
         _complex_keywords = (
@@ -325,18 +504,22 @@ class LLMService:
         )
         _dashboard_keywords = ("dashboard", "mehrere grafiken", "mehrere diagramme", "mehrere charts", "cockpit")
         _chart_keywords = ("chart", "plot", "diagram", "visual", "zeige", "zeichne")
+        requested_chart_count = max(
+            [int(match) for match in re.findall(r"\b(\d+)\s+(?:grafiken|grafik|diagramme|diagramm|charts|chart)\b", lowered)]
+            or [0]
+        )
         is_dashboard = any(kw in lowered for kw in _dashboard_keywords)
         is_complex = any(kw in lowered for kw in _complex_keywords)
         is_chart = any(kw in lowered for kw in _chart_keywords)
-        if is_dashboard:
+        if is_dashboard or requested_chart_count > 1:
             output_mode = OutputMode.DASHBOARD
         elif is_complex or is_chart:
             output_mode = OutputMode.FREE_CODE
         else:
             output_mode = OutputMode.TEXT
-        referenced_columns = [column.name for column in profile.columns if column.name.lower() in lowered]
+        referenced_columns = self._extract_referenced_columns(question, profile)
         requires_clarification = (
-            (output_mode == OutputMode.FREE_CODE and len(question.split()) < 4)
+            (output_mode in {OutputMode.FREE_CODE, OutputMode.DASHBOARD} and len(question.split()) < 4)
             or ("best" in lowered and not referenced_columns)
             or ("compare" in lowered and len(referenced_columns) < 2 and len(profile.numeric_columns) > 1)
         )
@@ -375,10 +558,14 @@ class LLMService:
     ) -> AnalysisPlan:
         selected_columns = intent.referenced_columns[:]
         if not selected_columns:
-            if intent.recommended_output_mode == OutputMode.FREE_CODE and profile.categorical_columns:
+            selected_columns = self._extract_referenced_columns(question, profile)
+        if not selected_columns:
+            if profile.time_columns:
+                selected_columns.append(profile.time_columns[0])
+            if profile.categorical_columns:
                 selected_columns.append(profile.categorical_columns[0])
             if profile.numeric_columns:
-                selected_columns.append(profile.numeric_columns[0])
+                selected_columns.extend(profile.numeric_columns[:2])
         approval_required = "sensitive" in (clarification_answer or "").lower()
         return AnalysisPlan(
             objective=question,
@@ -399,23 +586,44 @@ class LLMService:
 
     def _heuristic_chart_spec(self, question: str, plan: AnalysisPlan, profile: DatasetProfile) -> ChartSpec:
         lowered = question.lower()
-        x_column = next(iter(plan.selected_columns), None) or (profile.categorical_columns[0] if profile.categorical_columns else profile.columns[0].name)
+        column_types = self._column_map(profile)
+        selected_numeric = [column for column in plan.selected_columns if column_types.get(column) == "numeric"]
+        selected_categorical = [
+            column for column in plan.selected_columns if column_types.get(column) in {"categorical", "text", "boolean"}
+        ]
+        selected_time = [column for column in plan.selected_columns if column_types.get(column) == "datetime"]
+
+        x_column = next(
+            iter(selected_categorical or selected_time or selected_numeric),
+            None,
+        ) or (profile.categorical_columns[0] if profile.categorical_columns else profile.columns[0].name)
         y_column = None
         chart_type = ChartType.BAR
 
         if "hist" in lowered or "distribution" in lowered:
             chart_type = ChartType.HISTOGRAM
-            x_column = profile.numeric_columns[0] if profile.numeric_columns else x_column
-        elif "scatter" in lowered and len(profile.numeric_columns) >= 2:
+            x_column = next(iter(selected_numeric), None) or (profile.numeric_columns[0] if profile.numeric_columns else x_column)
+        elif "scatter" in lowered and len(selected_numeric or profile.numeric_columns) >= 2:
             chart_type = ChartType.SCATTER
-            x_column = profile.numeric_columns[0]
-            y_column = profile.numeric_columns[1]
-        elif ("line" in lowered or "trend" in lowered) and profile.time_columns and profile.numeric_columns:
+            numeric_pool = selected_numeric or profile.numeric_columns
+            x_column = numeric_pool[0]
+            y_column = numeric_pool[1]
+        elif ("line" in lowered or "trend" in lowered) and (selected_time or profile.time_columns) and (selected_numeric or profile.numeric_columns):
             chart_type = ChartType.LINE
-            x_column = profile.time_columns[0]
-            y_column = profile.numeric_columns[0]
+            x_column = next(iter(selected_time), None) or profile.time_columns[0]
+            y_column = next(iter(selected_numeric), None) or profile.numeric_columns[0]
         else:
-            if len(plan.selected_columns) > 1:
+            if selected_categorical and selected_numeric:
+                x_column = selected_categorical[0]
+                y_column = selected_numeric[0]
+            elif len(selected_numeric) >= 2:
+                chart_type = ChartType.SCATTER
+                x_column = selected_numeric[0]
+                y_column = selected_numeric[1]
+            elif selected_numeric:
+                chart_type = ChartType.HISTOGRAM
+                x_column = selected_numeric[0]
+            elif len(plan.selected_columns) > 1:
                 y_column = plan.selected_columns[1]
             elif profile.numeric_columns:
                 y_column = profile.numeric_columns[0]
@@ -437,77 +645,13 @@ class LLMService:
         plan: AnalysisPlan,
         profile: DatasetProfile,
     ) -> DashboardSpec:
-        charts: list[ChartSpec] = []
-
-        if profile.time_columns and profile.numeric_columns:
-            charts.append(
-                ChartSpec(
-                    chart_type=ChartType.LINE,
-                    x_column=profile.time_columns[0],
-                    y_column=profile.numeric_columns[0],
-                    aggregation=AggregationOp.MEAN,
-                    title=f"Trend von {profile.numeric_columns[0]}",
-                    rationale="Zeitliche Entwicklung einer numerischen Kennzahl.",
-                )
-            )
-
-        if profile.categorical_columns and profile.numeric_columns:
-            charts.append(
-                ChartSpec(
-                    chart_type=ChartType.BAR,
-                    x_column=profile.categorical_columns[0],
-                    y_column=profile.numeric_columns[0],
-                    aggregation=AggregationOp.MEAN,
-                    sort_direction=SortDirection.DESC,
-                    top_n=10,
-                    title=f"{profile.numeric_columns[0]} nach {profile.categorical_columns[0]}",
-                    rationale="Vergleich nach Kategorie.",
-                )
-            )
-        elif profile.categorical_columns:
-            charts.append(
-                ChartSpec(
-                    chart_type=ChartType.BAR,
-                    x_column=profile.categorical_columns[0],
-                    aggregation=AggregationOp.COUNT,
-                    sort_direction=SortDirection.DESC,
-                    top_n=10,
-                    title=f"Haeufigkeit nach {profile.categorical_columns[0]}",
-                    rationale="Kategorienverteilung.",
-                )
-            )
-
-        if len(profile.numeric_columns) >= 2:
-            charts.append(
-                ChartSpec(
-                    chart_type=ChartType.SCATTER,
-                    x_column=profile.numeric_columns[0],
-                    y_column=profile.numeric_columns[1],
-                    title=f"{profile.numeric_columns[0]} vs. {profile.numeric_columns[1]}",
-                    rationale="Zusammenhang zweier numerischer Kennzahlen.",
-                )
-            )
-        elif profile.numeric_columns:
-            charts.append(
-                ChartSpec(
-                    chart_type=ChartType.HISTOGRAM,
-                    x_column=profile.numeric_columns[0],
-                    title=f"Verteilung von {profile.numeric_columns[0]}",
-                    rationale="Verteilungsansicht einer numerischen Kennzahl.",
-                )
-            )
-
-        unique_charts: list[ChartSpec] = []
-        seen_titles: set[str] = set()
-        for chart in charts:
-            if chart.title not in seen_titles:
-                unique_charts.append(chart)
-                seen_titles.add(chart.title)
+        selected_columns = plan.selected_columns or self._extract_referenced_columns(question, profile)
+        charts = self._build_dashboard_candidates(selected_columns, profile)
 
         return DashboardSpec(
             title=f"Dashboard: {question[:80]}",
-            rationale="Mehrere komplementaere Diagramme fuer einen kompakten Ueberblick.",
-            charts=unique_charts[:4],
+            rationale="Mehrere komplementaere Diagramme, priorisiert nach den im Prompt genannten Feldern.",
+            charts=charts,
         )
 
     def _heuristic_text_answer(self, question: str, plan: AnalysisPlan, profile: DatasetProfile) -> TextAnswerSpec:
