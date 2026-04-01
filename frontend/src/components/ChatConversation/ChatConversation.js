@@ -3,24 +3,83 @@ import './ChatConversation.css';
 import { chatApi } from './chatApi';
 import { getDatasets } from '../../services/DatasetService/datasetService';
 
+// Globales Mapping zwischen lokalen Frontend Mock-IDs (die aus ChatPanel kommen) und echten Backend-IDs
+const chatSessionMap = {};
+
 /**
  * ChatConversation Component
  *
  * Zeigt die Chat-Nachrichten und Input-Feld für die Konversation
  */
 function ChatConversation({ chatId, onBack }) {
-    const [messages, setMessages] = useState([
-        {
-            id: 1,
-            type: 'assistant',
-            text: 'Hallo! Ich helfe dir bei der Analyse deiner Daten. Stelle mir eine Frage oder beschreibe, was du visualisieren möchtest.',
-            timestamp: new Date()
-        }
-    ]);
+    const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [backendChatId, setBackendChatId] = useState(null);
+
+    // Wir prüfen, ob die übergebene chatId (ein Timestamp vom Mock-Sidebar) 
+    // schon mit einer echten Backend-ID verknüpft ist.
+    const [backendChatId, setBackendChatId] = useState(chatSessionMap[chatId] || null);
     const messagesEndRef = useRef(null);
+
+    // Lade komplette Chat-History wenn chatId sich ändert
+    useEffect(() => {
+        const actualBackendId = chatSessionMap[chatId] || null;
+
+        if (actualBackendId) {
+            setBackendChatId(actualBackendId);
+            setIsLoading(true);
+            chatApi.getChatMessages(actualBackendId)
+                .then(messagesData => {
+                    if (messagesData && messagesData.length > 0) {
+                        const formattedMessages = messagesData
+                            .filter(msg => msg.role !== 'system')
+                            .map(msg => {
+                                let parsedArtifacts = [];
+                                if (msg.generated_image) {
+                                    parsedArtifacts.push({
+                                        artifact_type: 'image',
+                                        path: msg.generated_image
+                                    });
+                                }
+
+                                return {
+                                    id: msg.id,
+                                    type: msg.role === 'user' ? 'user' : 'assistant',
+                                    text: msg.content,
+                                    artifacts: parsedArtifacts,
+                                    timestamp: new Date(msg.created_at || Date.now())
+                                };
+                            });
+                        setMessages(formattedMessages);
+                    } else {
+                        setMessages([{
+                            id: 1,
+                            type: 'assistant',
+                            text: 'Hallo! Der Chat ist noch leer. Was möchtest du tun?',
+                            timestamp: new Date()
+                        }]);
+                    }
+                })
+                .catch(err => {
+                    console.error('Fehler beim Laden des Chats:', err);
+                    setMessages([{
+                        id: 1,
+                        type: 'assistant',
+                        text: 'Mein Speicher für diese Unterhaltung ist leider unerreichbar.',
+                        timestamp: new Date()
+                    }]);
+                })
+                .finally(() => setIsLoading(false));
+        } else {
+            setBackendChatId(null);
+            setMessages([{
+                id: 1,
+                type: 'assistant',
+                text: 'Hallo! Ich helfe dir bei der Analyse deiner Daten. Stelle mir eine Frage oder beschreibe, was du visualisieren möchtest.',
+                timestamp: new Date()
+            }]);
+        }
+    }, [chatId]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,6 +118,11 @@ function ChatConversation({ chatId, onBack }) {
                 const newChat = await chatApi.createChat(datasetId);
                 currentChatId = newChat.id;
                 setBackendChatId(currentChatId);
+
+                // Mappe den lokalen Mock-ID Status auf die persistente Backend ID!
+                if (chatId) {
+                    chatSessionMap[chatId] = currentChatId;
+                }
             }
 
             // Nachricht via API senden
@@ -70,7 +134,7 @@ function ChatConversation({ chatId, onBack }) {
             if (response.assistant_message && response.assistant_message.content) {
                 assistantText = response.assistant_message.content;
             } else if (response.final_response && response.final_response.message) {
-                 assistantText = response.final_response.message;
+                assistantText = response.final_response.message;
             } else if (response.content) {
                 assistantText = response.content;
             }
@@ -92,11 +156,11 @@ function ChatConversation({ chatId, onBack }) {
                 artifacts: assistantArtifacts,
                 timestamp: new Date()
             };
-            
+
             setMessages((prev) => [...prev, assistantMessage]);
         } catch (error) {
             console.error('Error during API call for chat:', error);
-            
+
             let errorText = 'Fehler bei der Kommunikation mit dem KI Agenten. Bitte überprüfe das Backend.';
             if (error.message === 'NoDatasetError') {
                 errorText = 'Bitte lade zuerst einen Datensatz hoch (unter dem Tab Datasets), bevor du den KI-Agenten startest.';
@@ -164,14 +228,14 @@ function ChatConversation({ chatId, onBack }) {
 
                                             return (
                                                 <div key={idx} className="artifact-image-container">
-                                                    <img 
-                                                        src={imgUrl} 
-                                                        alt={imgTitle} 
+                                                    <img
+                                                        src={imgUrl}
+                                                        alt={imgTitle}
                                                         draggable="true"
                                                         onDragStart={handleDragStart}
                                                         className="artifact-image"
                                                     />
-                                                    <button 
+                                                    <button
                                                         onClick={handleAddToDashboard}
                                                         className="add-to-dashboard-btn"
                                                         title="Zum Dashboard hinzufügen"

@@ -181,14 +181,11 @@
     border: none;
     border-radius: 8px;
     overflow: visible;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: block; /* Verhindert Streckungen in Flex-Containern */
     position: relative;
     cursor: grab;
     box-shadow: none;
-    height: fit-content !important; /* 🔥 Zwingt das Gitter-Fenster, exakt die Höhe des Diagramms anzunehmen */
+    height: max-content !important; /* 🔥 Zwingt das Gitter-Fenster, exakt die Höhe des Diagramms anzunehmen (sicherer als fit-content auf absoluten Grid-Elementen) */
 }
 
 .dashboard-widget:active {
@@ -201,10 +198,8 @@
     border-radius: 8px;
     transition: background 0.2s ease;
     width: 100%;
-    /* Höhe leitet sich natürlich vom Inhalt ab */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: max-content; /* Zwingend content-abhängig */
+    display: block; /* Flex kann hier manchmal unsichtbare Ränder erzeugen */
 }
 
 .widget-glass:hover {

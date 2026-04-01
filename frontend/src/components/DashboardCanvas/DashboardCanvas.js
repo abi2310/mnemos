@@ -23,39 +23,33 @@ function DashboardCanvas() {
         }
     }, []);
 
-    // 🔥 Bei Breitenänderung alle Höhen neu berechnen, damit das Seitenverhältnis erhalten bleibt
+    // 🔥 Bei Breitenänderung Höhen korrigieren
     useEffect(() => {
-        setLayout(prev => {
-            let changed = false;
-            const newLayout = prev.map(item => {
+        setLayout(prev =>
+            prev.map(item => {
                 const ratio = aspectRatiosRef.current[item.i];
                 if (ratio) {
-                    const newH = getHeightFromRatio(item.w, ratio, containerWidth);
-                    if (item.h !== newH) {
-                        changed = true;
-                        return { ...item, h: newH };
-                    }
+                    return {
+                        ...item,
+                        h: getHeightFromRatio(item.w, ratio, containerWidth)
+                    };
                 }
                 return item;
-            });
-            return changed ? newLayout : prev;
-        });
+            })
+        );
     }, [containerWidth]);
 
     useEffect(() => {
         const handleAddEvent = (e) => {
             const parsed = e.detail;
+
             if (parsed?.type === 'artifact_image') {
                 const newId = Date.now().toString();
 
-                const newWidget = {
+                setWidgets(prev => [...prev, {
                     id: newId,
-                    type: 'image',
-                    title: parsed.description || 'Visualisierung',
                     url: parsed.url
-                };
-
-                setWidgets(prev => [...prev, newWidget]);
+                }]);
 
                 setLayout(prev => [
                     ...prev,
@@ -64,9 +58,9 @@ function DashboardCanvas() {
                         x: (prev.length * 4) % 12,
                         y: Infinity,
                         w: 4,
-                        h: 29,
+                        h: 20,
                         minW: 3,
-                        minH: 10
+                        minH: 5
                     }
                 ]);
             }
@@ -89,14 +83,10 @@ function DashboardCanvas() {
                 if (parsed.type === 'artifact_image') {
                     const newId = Date.now().toString();
 
-                    const newWidget = {
+                    setWidgets(prev => [...prev, {
                         id: newId,
-                        type: 'image',
-                        title: parsed.description || 'Visualisierung',
                         url: parsed.url
-                    };
-
-                    setWidgets(prev => [...prev, newWidget]);
+                    }]);
 
                     setLayout(prev => [
                         ...prev,
@@ -105,14 +95,12 @@ function DashboardCanvas() {
                             x: (prev.length * 4) % 12,
                             y: Infinity,
                             w: 4,
-                            h: 29,
-                            minW: 3,
-                            minH: 10
+                            h: 20
                         }
                     ]);
                 }
             } catch (err) {
-                console.error("Drop Fehler:", err);
+                console.error(err);
             }
         }
     };
@@ -120,22 +108,26 @@ function DashboardCanvas() {
     const removeWidget = (id) => {
         setWidgets(prev => prev.filter(w => w.id !== id));
         setLayout(prev => prev.filter(l => l.i !== id));
-
         delete aspectRatiosRef.current[id];
     };
 
-    // 🔥 Zentrale Höhenberechnung
+    // 🔥 KORRIGIERTE Höhenberechnung (pixelgenau, OHNE Margin-Bug)
     const getHeightFromRatio = (w, ratio, containerWidth) => {
-        const marginX = 10;
+        const margin = 10;
         const cols = 12;
-        const rowHeight = 1; // Hochauflösendes Grid für pixelperfektes Wrapping
+        const rowHeight = 1;
+        const padding = 10;
 
-        const paddingX = 10; // containerPadding ist [10, 10]
-        const colWidth = (containerWidth - marginX * (cols - 1) - paddingX * 2) / cols;
-        const widthPx = w * colWidth + marginX * (w - 1);
+        const colWidth =
+            (containerWidth - margin * (cols - 1) - padding * 2) / cols;
+
+        const widthPx = w * colWidth + margin * (w - 1);
         const heightPx = widthPx * ratio;
 
-        return Math.max(1, Math.ceil((heightPx + marginX) / (rowHeight + marginX)));
+        // 🔥 KORREKTUR: Um die echte Grid "h" Einheit zu berechnen, müssen wir die Lücken (margin) mit einbeziehen. 
+        // Formel für die Pixelhöhe im React-Grid: heightPx = h * rowHeight + (h - 1) * margin
+        // Aufgelöst nach h: h = (heightPx + margin) / (rowHeight + margin)
+        return Math.max(1, Math.round((heightPx + margin) / (rowHeight + margin)));
     };
 
     const handleImageLoad = (id, width, height) => {
@@ -159,10 +151,6 @@ function DashboardCanvas() {
 
     return (
         <div className="dashboard-canvas">
-            <div className="dashboard-header">
-                <h2>Dashboard</h2>
-            </div>
-
             <div className="dashboard-content">
                 <div
                     ref={containerRef}
@@ -170,77 +158,66 @@ function DashboardCanvas() {
                     onDrop={handleDrop}
                     style={{ width: '100%', minHeight: '500px' }}
                 >
-                    {widgets.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: 40 }}>
-                            <h3>Noch keine Visualisierungen</h3>
-                        </div>
-                    ) : (
-                        <GridLayout
-                            width={containerWidth}
-                            cols={12}
-                            rowHeight={1} // Pixelperfektes Aspect-Ratio-Wrapping
-                            layout={layout}
-                            margin={[10, 10]}
-                            containerPadding={[10, 10]}
+                    <GridLayout
+                        width={containerWidth}
+                        cols={12}
+                        rowHeight={1}
+                        layout={layout}
+                        margin={[10, 10]}
+                        containerPadding={[10, 10]}
 
-                            // 🔥 Layout IMMER korrigieren durch synchronen Ref, keine State-Verzögerung!
-                            onLayoutChange={(newLayout) => {
-                                const corrected = newLayout.map(item => {
-                                    const ratio = aspectRatiosRef.current[item.i];
-                                    if (ratio) {
-                                        return {
-                                            ...item,
-                                            h: getHeightFromRatio(item.w, ratio, containerWidth)
-                                        };
-                                    }
-                                    return item;
-                                });
-                                setLayout(corrected);
-                            }}
-
-                            // 🔥 Resize → Höhe sofort fixen
-                            onResize={(layout, oldItem, newItem) => {
-                                const ratio = aspectRatiosRef.current[newItem.i];
+                        onLayoutChange={(newLayout) => {
+                            const corrected = newLayout.map(item => {
+                                const ratio = aspectRatiosRef.current[item.i];
                                 if (ratio) {
-                                    newItem.h = getHeightFromRatio(newItem.w, ratio, containerWidth);
+                                    return {
+                                        ...item,
+                                        h: getHeightFromRatio(item.w, ratio, containerWidth)
+                                    };
                                 }
-                            }}
-                        >
-                            {widgets.map(widget => {
-                                return (
-                                    <div key={widget.id} className="dashboard-widget">
-                                        {/* Neu: Passgenauer Glas-Wrapper umschließt NUR das Bild */}
-                                        <div className="widget-glass">
-                                            <button
-                                                className="delete-btn"
-                                                onClick={() => removeWidget(widget.id)}
-                                            >
-                                                ✕
-                                            </button>
-                                            <img
-                                                src={widget.url}
-                                                alt={widget.title}
-                                                style={{
-                                                    width: '100%',
-                                                    height: 'auto',
-                                                    objectFit: 'contain',
-                                                    display: 'block',
-                                                    borderRadius: '8px'
-                                                }}
-                                                onLoad={(e) =>
-                                                    handleImageLoad(
-                                                        widget.id,
-                                                        e.target.naturalWidth,
-                                                        e.target.naturalHeight
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </GridLayout>
-                    )}
+                                return item;
+                            });
+                            setLayout(corrected);
+                        }}
+
+                        onResize={(layout, oldItem, newItem) => {
+                            const ratio = aspectRatiosRef.current[newItem.i];
+                            if (ratio) {
+                                newItem.h = getHeightFromRatio(newItem.w, ratio, containerWidth);
+                            }
+                        }}
+                    >
+                        {widgets.map(widget => (
+                            <div key={widget.id} className="dashboard-widget">
+                                <div className="widget-glass">
+                                    <button
+                                        className="delete-btn"
+                                        onClick={() => removeWidget(widget.id)}
+                                    >
+                                        ✕
+                                    </button>
+
+                                    <img
+                                        src={widget.url}
+                                        alt=""
+                                        style={{
+                                            width: '100%',
+                                            height: 'auto',
+                                            objectFit: 'contain',
+                                            display: 'block'
+                                        }}
+                                        onLoad={(e) =>
+                                            handleImageLoad(
+                                                widget.id,
+                                                e.target.naturalWidth,
+                                                e.target.naturalHeight
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </GridLayout>
                 </div>
             </div>
         </div>
