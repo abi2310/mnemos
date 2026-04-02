@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import App from './App';
 import { getDatasets } from './services/DatasetService/datasetService';
+import { createProject, deleteProject, getProjects, updateProject } from './services/ProjectService/projectService';
 
 jest.mock('./services/DatasetService/datasetService', () => ({
     getDatasets: jest.fn(),
@@ -9,9 +10,34 @@ jest.mock('./services/DatasetService/datasetService', () => ({
     getDatasetSchema: jest.fn(),
 }));
 
+jest.mock('./services/ProjectService/projectService', () => ({
+    getProjects: jest.fn(),
+    createProject: jest.fn(),
+    updateProject: jest.fn(),
+    deleteProject: jest.fn(),
+}));
+
 describe('App Component', () => {
     beforeEach(() => {
         getDatasets.mockResolvedValue([]);
+        getProjects.mockResolvedValue([]);
+        createProject.mockImplementation(async (payload) => ({
+            id: 1,
+            name: payload.name,
+            dataset_ids: payload.dataset_ids || [],
+            chat_ids: [],
+            created_at: '2026-04-02T10:00:00Z',
+            updated_at: '2026-04-02T10:00:00Z',
+        }));
+        updateProject.mockImplementation(async (id, payload) => ({
+            id,
+            name: payload.name,
+            dataset_ids: [],
+            chat_ids: [],
+            created_at: '2026-04-02T10:00:00Z',
+            updated_at: '2026-04-02T10:05:00Z',
+        }));
+        deleteProject.mockResolvedValue();
     });
 
     afterEach(() => {
@@ -140,7 +166,7 @@ describe('App Component', () => {
         expect(screen.queryByText(/Please enter a project name/i)).not.toBeInTheDocument();
     });
 
-    test('erstellt ein Projekt und zeigt die Tab-Navigation', () => {
+    test('erstellt ein Projekt und zeigt die Tab-Navigation', async () => {
         render(<App />);
 
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
@@ -151,7 +177,9 @@ describe('App Component', () => {
         fireEvent.change(screen.getByPlaceholderText(/Enter project name/i), { target: { value: 'My Project' } });
         fireEvent.click(screen.getByText('Create Project'));
 
-        expect(screen.queryByText('New Project', { selector: '.modal-title' })).not.toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.queryByText('New Project', { selector: '.modal-title' })).not.toBeInTheDocument();
+        });
 
         const topbar = screen.getByRole('banner');
         expect(topbar).toHaveClass('topbar--with-nav');
@@ -159,7 +187,7 @@ describe('App Component', () => {
 
     // ===== Prepare Tab Placeholder =====
 
-    test('zeigt Prepare-Platzhalter wenn Projekt aktiv', () => {
+    test('zeigt Prepare-Platzhalter wenn Projekt aktiv', async () => {
         render(<App />);
 
         const toggleButton = screen.getByLabelText(/Sidebar fixieren/i);
@@ -169,7 +197,9 @@ describe('App Component', () => {
         fireEvent.change(screen.getByPlaceholderText(/Enter project name/i), { target: { value: 'Test' } });
         fireEvent.click(screen.getByText('Create Project'));
 
-        expect(screen.getByText(/Upload a dataset to start wrangling data/i)).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText(/Upload a dataset to start wrangling data/i)).toBeInTheDocument();
+        });
         expect(screen.queryByText(/Not yet implemented/i)).not.toBeInTheDocument();
     });
 

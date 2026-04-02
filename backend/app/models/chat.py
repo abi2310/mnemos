@@ -9,6 +9,7 @@ from sqlmodel import SQLModel, Field as SQLField, Relationship
 class ChatDB(SQLModel, table=True):
     id: Optional[int] = SQLField(default=None, primary_key=True)
     dataset_id: str
+    project_id: Optional[int] = SQLField(default=None, foreign_key="projectdb.id")
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -43,11 +44,13 @@ class Chat(BaseModel):
 
 class ChatCreate(BaseModel):
     dataset_id: str
+    project_id: int | None = None
 
 
 class ChatOut(BaseModel):
     id: int
     dataset_id: str
+    project_id: int | None = None
     created_at: datetime
     updated_at: datetime
 

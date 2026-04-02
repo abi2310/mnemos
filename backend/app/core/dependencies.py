@@ -3,6 +3,7 @@ from app.core.config import get_settings
 from app.services.storage import StorageService
 from app.services.datasets import DatasetService
 from app.services.chat import ChatService
+from app.services.projects import ProjectService
 
 
 @lru_cache()
@@ -22,3 +23,8 @@ def get_chat_service() -> ChatService:
     settings = get_settings()
     dataset_service = get_dataset_service()
     return ChatService(dataset_service=dataset_service, storage_dir=settings.storage_dir)
+
+
+@lru_cache()
+def get_project_service() -> ProjectService:
+    return ProjectService()

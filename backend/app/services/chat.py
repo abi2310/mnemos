@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, List, cast
 
-from sqlalchemy import asc
+from sqlalchemy import asc, inspect, text
 from sqlmodel import Session, create_engine, select
 from fastapi import HTTPException
 
@@ -29,8 +29,22 @@ class ChatService:
     def create_tables(self):
         """Create all tables if they don't exist."""
         from sqlmodel import SQLModel
+        from app.models import projects as _project_models  # noqa: F401
 
         SQLModel.metadata.create_all(self.engine)
+        self._migrate_legacy_chat_schema()
+
+    def _migrate_legacy_chat_schema(self) -> None:
+        inspector = inspect(self.engine)
+        if "chatdb" not in inspector.get_table_names():
+            return
+
+        column_names = {column["name"] for column in inspector.get_columns("chatdb")}
+        if "project_id" in column_names:
+            return
+
+        with self.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE chatdb ADD COLUMN project_id INTEGER"))
 
     def _message_to_out(self, message: MessageDB) -> MessageOut:
         assert message.id is not None
@@ -61,7 +75,8 @@ class ChatService:
         """Create a new chat."""
         with Session(self.engine) as session:
             chat = ChatDB(
-                dataset_id=chat_data.dataset_id
+                dataset_id=chat_data.dataset_id,
+                project_id=chat_data.project_id,
             )
             session.add(chat)
             session.commit()
@@ -70,6 +85,7 @@ class ChatService:
             return ChatOut(
                 id=chat.id,
                 dataset_id=chat.dataset_id,
+                project_id=chat.project_id,
                 created_at=chat.created_at,
                 updated_at=chat.updated_at
             )
@@ -84,6 +100,7 @@ class ChatService:
             return ChatOut(
                 id=chat.id,
                 dataset_id=chat.dataset_id,
+                project_id=chat.project_id,
                 created_at=chat.created_at,
                 updated_at=chat.updated_at
             )
@@ -102,6 +119,7 @@ class ChatService:
             return {
                 "id": chat.id,
                 "dataset_id": chat.dataset_id,
+                "project_id": chat.project_id,
                 "created_at": chat.created_at,
                 "updated_at": chat.updated_at,
                 "messages": [
@@ -149,13 +167,13 @@ class ChatService:
                 select(MessageDB).where(MessageDB.chat_id == chat_id).order_by(asc(cast(Any, MessageDB.created_at)))
             ).all()
             history_items = [
-                ChatHistoryItem(role=message.role, content=message.content)
+                ChatHistoryItem(role=cast(Any, message.role), content=message.content)
                 for message in ordered_messages[:-1]
                 if message.role in {"system", "user", "assistant"}
             ]
 
             pending_interrupt = self.analysis_agent.has_pending_interrupt(chat_id)
-            should_attempt_resume = pending_interrupt or self._last_assistant_looks_like_clarification(ordered_messages)
+            should_attempt_resume = pending_interrupt or self._last_assistant_looks_like_clarification(list(ordered_messages))
 
             if should_attempt_resume:
                 try:

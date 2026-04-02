@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.v1 import datasets as datasets_router
 from app.api.v1 import chat as chat_router
+from app.api.v1 import projects as projects_router
 from app.core.config import get_settings
 
 
@@ -26,6 +27,7 @@ app.add_middleware(
 
 app.include_router(datasets_router.router, prefix="/api/v1")
 app.include_router(chat_router.router, prefix="/api/v1")
+app.include_router(projects_router.router, prefix="/api/v1")
 app.mount("/storage", StaticFiles(directory=str(settings.storage_dir)), name="storage")
 
 
@@ -34,12 +36,17 @@ def read_root():
     return {"service": "mnemos", "status": "ok"}
 
 
+@app.on_event("startup")
+def initialize_persistence() -> None:
+    from app.core.dependencies import get_chat_service, get_project_service
+
+    chat_svc = get_chat_service()
+    project_svc = get_project_service()
+    chat_svc.create_tables()
+    project_svc.create_tables()
+
+
 if __name__ == "__main__":
     import uvicorn
-
-    # Create database tables
-    from app.core.dependencies import get_chat_service
-    chat_svc = get_chat_service()
-    chat_svc.create_tables()
 
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

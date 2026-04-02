@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, File, UploadFile, Form
 
 from app.models.datasets import DatasetOut, DatasetSchema
 from app.services.datasets import DatasetService
-from app.core.dependencies import get_dataset_service
+from app.services.projects import ProjectService
+from app.core.dependencies import get_dataset_service, get_project_service
 
 
 router = APIRouter()
@@ -12,19 +13,29 @@ router = APIRouter()
 
 @router.post("/datasets", response_model=DatasetOut, status_code=201)
 async def upload_dataset(
-    file: UploadFile = File(...), ds_svc: DatasetService = Depends(get_dataset_service)
+    file: UploadFile = File(...),
+    project_id: int | None = Form(None),
+    ds_svc: DatasetService = Depends(get_dataset_service),
+    project_svc: ProjectService = Depends(get_project_service),
 ):
     """Upload a tabular dataset file (csv, xlsx, parquet, json)."""
+    if project_id is not None:
+        project_svc.get_project(project_id)
     created = ds_svc.create_from_upload(file)
+    if project_id is not None:
+        project_svc.attach_dataset(project_id, created.dataset_id)
     return created
 
 
 @router.delete("/datasets/{dataset_id}", status_code=204)
 async def delete_dataset(
-    dataset_id: str, ds_svc: DatasetService = Depends(get_dataset_service)
+    dataset_id: str,
+    ds_svc: DatasetService = Depends(get_dataset_service),
+    project_svc: ProjectService = Depends(get_project_service),
 ):
     """Delete stored dataset and its metadata."""
     ds_svc.delete(dataset_id)
+    project_svc.remove_dataset_references(dataset_id)
     return None
 
 

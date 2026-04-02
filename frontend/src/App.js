@@ -1,9 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import TopBar from './components/TopBar/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
 import Prepare from './components/Prepare/Prepare';
 import Explore from './components/Explore/Explore';
 import Datasets from './components/Datasets/Datasets';
+import { createProject, deleteProject, getProjects, updateProject } from './services/ProjectService/projectService';
 import './App.css';
 
 function App() {
@@ -16,16 +17,33 @@ function App() {
     const [activeProject, setActiveProject] = useState(null);
     const [projectName, setProjectName] = useState('');
     const [projectNameError, setProjectNameError] = useState(false);
+    const [modalDatasets, setModalDatasets] = useState([]);
     const hoverTimeoutRef = useRef(null);
     const hoverSuppressedRef = useRef(false);
 
-    const handleCreateProject = () => {
+    useEffect(() => {
+        const loadProjects = async () => {
+            try {
+                const data = await getProjects();
+                setProjects(data);
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+            }
+        };
+        loadProjects();
+    }, []);
+
+    const handleCreateProject = async () => {
         if (!projectName.trim()) {
             setProjectNameError(true);
             return;
         }
-        const newProject = { name: projectName.trim(), id: Date.now(), createdAt: new Date().toISOString() };
-        setProjects([...projects, newProject]);
+        const datasetIds = modalDatasets.map((dataset) => dataset.dataset_id);
+        const newProject = await createProject({
+            name: projectName.trim(),
+            dataset_ids: datasetIds,
+        });
+        setProjects((prev) => [newProject, ...prev]);
         setActiveProject(newProject);
         setShowNewProject(false);
         setProjectName('');
@@ -33,9 +51,10 @@ function App() {
         setActiveTab('prepare');
     };
 
-    const handleDeleteProject = (e, id) => {
+    const handleDeleteProject = async (e, id) => {
         e.stopPropagation();
         if (window.confirm('Are you sure you want to delete this project?')) {
+            await deleteProject(id);
             setProjects(prev => prev.filter(p => p.id !== id));
             if (activeProject && activeProject.id === id) {
                 setActiveProject(null);
@@ -43,13 +62,14 @@ function App() {
         }
     };
 
-    const handleRenameProject = (e, id, currentName) => {
+    const handleRenameProject = async (e, id, currentName) => {
         e.stopPropagation();
         const newName = window.prompt('Enter new project name:', currentName);
         if (newName && newName.trim() && newName.trim() !== currentName) {
-            setProjects(prev => prev.map(p => p.id === id ? { ...p, name: newName.trim() } : p));
+            const updatedProject = await updateProject(id, { name: newName.trim() });
+            setProjects(prev => prev.map(p => p.id === id ? updatedProject : p));
             if (activeProject && activeProject.id === id) {
-                setActiveProject(prev => ({ ...prev, name: newName.trim() }));
+                setActiveProject(updatedProject);
             }
         }
     };
@@ -208,7 +228,7 @@ function App() {
                                                     </div>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-4)' }}>
                                                         <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
-                                                            Created: {new Date(proj.createdAt || proj.id).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                            Created: {new Date(proj.created_at || proj.createdAt || proj.id).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                         </span>
                                                         <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
                                                             <button
@@ -272,7 +292,7 @@ function App() {
                                 <p className="modal-error">Please enter a project name.</p>
                             )}
 
-                            <Prepare />
+                            <Prepare onDatasetsChange={setModalDatasets} />
 
                             <button className="App-btn-primary modal-create-btn" onClick={handleCreateProject}>Create Project</button>
                         </div>

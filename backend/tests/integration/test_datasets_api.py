@@ -4,7 +4,10 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.services.storage import StorageService
 from app.services.datasets import DatasetService
+from app.services.projects import ProjectService
 from app.core import dependencies as core_deps
+from sqlalchemy import create_engine
+from sqlmodel import SQLModel
 
 
 @pytest.fixture
@@ -12,10 +15,14 @@ def client(tmp_path):
     """TestClient with overridden storage and dataset service using a temp dir."""
     storage = StorageService(tmp_path)
     ds_svc = DatasetService(storage)
+    project_svc = ProjectService()
+    project_svc.engine = create_engine(f"sqlite:///{tmp_path / 'test.db'}", echo=False)
+    SQLModel.metadata.create_all(project_svc.engine)
 
     # override dependencies so they share the temp storage
     app.dependency_overrides[core_deps.get_storage] = lambda: storage
     app.dependency_overrides[core_deps.get_dataset_service] = lambda: ds_svc
+    app.dependency_overrides[core_deps.get_project_service] = lambda: project_svc
 
     with TestClient(app) as c:
         yield c
@@ -168,4 +175,3 @@ def test_update_nonexistent_dataset(client):
     # try to update non-existent dataset
     resp = client.put("/api/v1/datasets/nonexistent-id", data={"original_name": "new.csv"})
     assert resp.status_code == 404
-

@@ -13,7 +13,7 @@ import './Prepare.css';
  * 1. Oben: Upload-Bereich (Dropzone + Upload-Button), sofern nicht versteckt
  * 2. Unten: Files-Übersicht (Tabelle mit Search, Bulk Actions, Row Actions)
  */
-function Prepare({ hideUpload }) {
+function Prepare({ hideUpload, onDatasetsChange }) {
     const [datasets, setDatasets] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedPreviewFile, setSelectedPreviewFile] = useState(null);
@@ -28,6 +28,9 @@ function Prepare({ hideUpload }) {
             setIsLoading(true);
             const data = await getDatasets();
             setDatasets(data);
+            if (onDatasetsChange) {
+                onDatasetsChange(data);
+            }
         } catch (error) {
             console.error('Failed to load datasets:', error);
         } finally {
@@ -134,4 +137,3 @@ function Prepare({ hideUpload }) {
 }
 
 export default Prepare;
-
