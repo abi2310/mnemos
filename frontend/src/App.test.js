@@ -3,6 +3,13 @@ import App from './App';
 import { getDatasets } from './services/DatasetService/datasetService';
 import { createProject, deleteProject, getProjects, updateProject } from './services/ProjectService/projectService';
 
+// Mock ResizeObserver for DashboardCanvas
+global.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+};
+
 jest.mock('./services/DatasetService/datasetService', () => ({
     getDatasets: jest.fn(),
     uploadDataset: jest.fn(),

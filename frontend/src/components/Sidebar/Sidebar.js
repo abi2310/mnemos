@@ -22,8 +22,8 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >
-      {isExpanded && (
-        <>
+      <div data-testid="sidebar-content-wrapper" style={{ display: isExpanded ? 'contents' : 'none' }}>
+          {!activeChat && (
           <nav className="sidebar-main-nav">
             <button className={`sidebar-nav-item ${activePage === 'home' ? 'sidebar-nav-item--active' : ''}`} onClick={() => onPageChange('home')}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -45,25 +45,27 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
               <span>Datasets</span>
             </button>
           </nav>
-
-          {showChat && (
-            <div className="sidebar-chat-section">
-              <ChatPanel
-                onNewChat={handleNewChat}
-                onChatSelect={handleChatSelect}
-                hideNav={true}
-                hideUserProfile={true}
-              />
-
-              {activeChat && (
-                <div className="sidebar-chat-container">
-                  <ChatConversation key={activeChat} chatId={activeChat} />
-                </div>
-              )}
-            </div>
           )}
 
+          <div data-testid="sidebar-chat-section" className="sidebar-chat-section" style={{ display: showChat ? 'flex' : 'none', flexDirection: 'column' }}>
+            {!activeChat && (
+            <ChatPanel
+              onNewChat={handleNewChat}
+              onChatSelect={handleChatSelect}
+              hideNav={true}
+              hideUserProfile={true}
+            />
+            )}
+
+            {activeChat && (
+            <div className="sidebar-chat-container" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+              <ChatConversation key={activeChat || 'default'} chatId={activeChat} onBack={() => setActiveChat(null)} />
+            </div>
+            )}
+          </div>
+
           {/* User Profile */}
+          {!activeChat && (
           <div className="sidebar-user-profile">
             <div className="sidebar-user-avatar"><span>MN</span></div>
             <div className="sidebar-user-info">
@@ -76,8 +78,8 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
               </svg>
             </button>
           </div>
-        </>
-      )}
+          )}
+      </div>
     </aside>
   );
 }
