@@ -1,5 +1,13 @@
 import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import App from './App';
+
+// Mock ResizeObserver for DashboardCanvas
+global.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+};
+
 import { getDatasets } from './services/DatasetService/datasetService';
 
 jest.mock('./services/DatasetService/datasetService', () => ({
