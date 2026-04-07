@@ -18,6 +18,15 @@
     background-color: #242424;
 }
 
+/* RGL Placeholder Override */
+.react-grid-item.react-grid-placeholder {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+    opacity: 1 !important;
+    border-radius: 8px !important;
+    transition-duration: 100ms;
+}
+
 .dashboard-title {
     margin: 0;
     font-size: var(--font-size-lg);
@@ -77,27 +86,20 @@
 /* Content Area */
 .dashboard-content {
     flex: 1;
-    overflow: hidden;
-    padding: 32px;
-    background-color: #1f1f1f;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow: auto;
+    padding: 24px;
+    background-color: #1a1a1a;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+    background-size: 20px 20px;
 }
 
 /* Dashboard Canvas Container */
 .dashboard-canvas-container {
     width: 100%;
-    height: 100%;
-    background-color: #2a2a2a;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 48px;
+    min-height: 100%;
+    padding: 0;
     box-sizing: border-box;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    position: relative;
 }
 
 /* Empty State */
@@ -175,38 +177,46 @@
 
 /* Dashboard Widget */
 .dashboard-widget {
-    background-color: #2a2a2a;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: all 0.15s ease;
-}
-
-.dashboard-widget:hover {
-    border-color: rgba(255, 255, 255, 0.15);
-}
-
-.widget-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background-color: #242424;
-}
-
-.widget-title {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #ffffff;
-}
-
-.widget-action {
-    background: none;
+    background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 20px;
+    border-radius: 8px;
+    overflow: visible;
+    display: block; /* Verhindert Streckungen in Flex-Containern */
+    position: relative;
+    cursor: grab;
+    box-shadow: none;
+    height: max-content !important; /* 🔥 Zwingt das Gitter-Fenster, exakt die Höhe des Diagramms anzunehmen (sicherer als fit-content auf absoluten Grid-Elementen) */
+}
+
+.dashboard-widget:active {
+    cursor: grabbing;
+}
+
+/* Neuer passgenauer Wrapper */
+.widget-glass {
+    position: relative;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+    width: 100%;
+    height: max-content; /* Zwingend content-abhängig */
+    display: block; /* Flex kann hier manchmal unsichtbare Ränder erzeugen */
+}
+
+.widget-glass:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Delete Button on Hover */
+.delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 16px;
     line-height: 1;
     cursor: pointer;
     padding: 0;
@@ -215,19 +225,36 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0;
 }
 
-.widget-action:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ef4444;
+.widget-glass:hover .delete-btn {
+    opacity: 1;
+}
+
+.delete-btn:hover {
+    background: rgba(220, 38, 38, 0.8);
+    color: white;
 }
 
 .widget-content {
-    padding: 16px;
-    min-height: 200px;
-    color: #ffffff;
+    flex: 1;
+    padding: 0;
+    /* Keine Ränder um das Diagramm herum */
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.widget-content img {
+    pointer-events: none;
+    /* Lässt Klick/Drag an den RGL-Container durch! */
+    border-radius: 8px;
+    /* leicht abgerundet, aber nah am originalen Bild */
 }
 
 /* Scrollbar Styling */

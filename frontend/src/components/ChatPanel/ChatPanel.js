@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ChatPanel.css';
 
 /**
@@ -8,8 +8,15 @@ import './ChatPanel.css';
  */
 function ChatPanel({ onNewChat, onChatSelect, hideNav = false, hideUserProfile = false }) {
     const [activeNav, setActiveNav] = useState('home');
-    const [chats, setChats] = useState([]);
+    const [chats, setChats] = useState(() => {
+        const saved = localStorage.getItem('mnemos_chats');
+        return saved ? JSON.parse(saved) : [];
+    });
     const [activeChat, setActiveChat] = useState(null);
+
+    useEffect(() => {
+        localStorage.setItem('mnemos_chats', JSON.stringify(chats));
+    }, [chats]);
 
     const handleNewChat = () => {
         const newChat = {
@@ -19,7 +26,9 @@ function ChatPanel({ onNewChat, onChatSelect, hideNav = false, hideUserProfile =
             messages: []
         };
 
-        setChats([newChat, ...chats]);
+        const updatedChats = [newChat, ...chats];
+        setChats(updatedChats);
+        localStorage.setItem('mnemos_chats', JSON.stringify(updatedChats));
         setActiveChat(newChat.id);
 
         // Callback an parent (Explore) component
@@ -41,6 +50,19 @@ function ChatPanel({ onNewChat, onChatSelect, hideNav = false, hideUserProfile =
 
         // TODO: Backend-Integration - Chat laden
         console.log('Chat selected:', chatId);
+    };
+
+    const handleDeleteChat = (e, chatId) => {
+        e.stopPropagation();
+        const updatedChats = chats.filter(c => c.id !== chatId);
+        setChats(updatedChats);
+        localStorage.setItem('mnemos_chats', JSON.stringify(updatedChats));
+
+        const sessionMap = JSON.parse(localStorage.getItem('mnemos_chat_sessions') || '{}');
+        if (sessionMap[chatId]) {
+            delete sessionMap[chatId];
+            localStorage.setItem('mnemos_chat_sessions', JSON.stringify(sessionMap));
+        }
     };
 
     return (
@@ -94,16 +116,32 @@ function ChatPanel({ onNewChat, onChatSelect, hideNav = false, hideUserProfile =
             <div className="chat-history">
                 <div className="chat-history-label">Recent Chats</div>
                 {chats.map((chat) => (
-                    <button
+                    <div
                         key={chat.id}
                         className={`chat-history-item ${activeChat === chat.id ? 'active' : ''}`}
                         onClick={() => handleChatSelect(chat.id)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px' }}
                     >
-                        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                        </svg>
-                        <span className="chat-title">{chat.title}</span>
-                    </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                            </svg>
+                            <span className="chat-title" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.title}</span>
+                        </div>
+                        <button
+                            className="chat-delete-btn"
+                            onClick={(e) => handleDeleteChat(e, chat.id)}
+                            title="Chat löschen"
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = '#fe4204'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
                 ))}
             </div>
 
