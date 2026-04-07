@@ -23,6 +23,7 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
       onMouseLeave={onHoverLeave}
     >
       <div style={{ display: isExpanded ? 'contents' : 'none' }}>
+          {!activeChat && (
           <nav className="sidebar-main-nav">
             <button className={`sidebar-nav-item ${activePage === 'home' ? 'sidebar-nav-item--active' : ''}`} onClick={() => onPageChange('home')}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -44,21 +45,27 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
               <span>Datasets</span>
             </button>
           </nav>
+          )}
 
           <div className="sidebar-chat-section" style={{ display: showChat ? 'flex' : 'none', flexDirection: 'column' }}>
+            {!activeChat && (
             <ChatPanel
               onNewChat={handleNewChat}
               onChatSelect={handleChatSelect}
               hideNav={true}
               hideUserProfile={true}
             />
+            )}
 
-            <div className="sidebar-chat-container" style={{ display: activeChat ? 'block' : 'none', flex: 1, overflow: 'hidden' }}>
-              <ChatConversation key={activeChat || 'default'} chatId={activeChat} />
+            {activeChat && (
+            <div className="sidebar-chat-container" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+              <ChatConversation key={activeChat || 'default'} chatId={activeChat} onBack={() => setActiveChat(null)} />
             </div>
+            )}
           </div>
 
           {/* User Profile */}
+          {!activeChat && (
           <div className="sidebar-user-profile">
             <div className="sidebar-user-avatar"><span>MN</span></div>
             <div className="sidebar-user-info">
@@ -71,6 +78,7 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
               </svg>
             </button>
           </div>
+          )}
       </div>
     </aside>
   );

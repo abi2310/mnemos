@@ -37,10 +37,23 @@ function ChatConversation({ chatId, onBack }) {
                             .map(msg => {
                                 let parsedArtifacts = [];
                                 if (msg.generated_image) {
-                                    parsedArtifacts.push({
-                                        artifact_type: 'image',
-                                        path: msg.generated_image
-                                    });
+                                    // Handle both comma-separated strings or JSON arrays if backend sends multiple
+                                    try {
+                                        const parsed = JSON.parse(msg.generated_image);
+                                        if (Array.isArray(parsed)) {
+                                            parsed.forEach(p => parsedArtifacts.push({ artifact_type: 'image', path: p }));
+                                        } else {
+                                            parsedArtifacts.push({ artifact_type: 'image', path: msg.generated_image });
+                                        }
+                                    } catch (e) {
+                                        // Fallback to comma separation
+                                        const paths = msg.generated_image.split(',');
+                                        paths.forEach(p => {
+                                            if (p.trim()) {
+                                                parsedArtifacts.push({ artifact_type: 'image', path: p.trim() });
+                                            }
+                                        });
+                                    }
                                 }
 
                                 return {
@@ -143,10 +156,21 @@ function ChatConversation({ chatId, onBack }) {
 
             // Diagramme / Bilder extrahieren
             if (response.assistant_message && response.assistant_message.generated_image) {
-                assistantArtifacts.push({
-                    artifact_type: 'image',
-                    path: response.assistant_message.generated_image
-                });
+                try {
+                    const parsed = JSON.parse(response.assistant_message.generated_image);
+                    if (Array.isArray(parsed)) {
+                        parsed.forEach(p => assistantArtifacts.push({ artifact_type: 'image', path: p }));
+                    } else {
+                        assistantArtifacts.push({ artifact_type: 'image', path: response.assistant_message.generated_image });
+                    }
+                } catch (e) {
+                    const paths = response.assistant_message.generated_image.split(',');
+                    paths.forEach(p => {
+                        if (p.trim()) {
+                            assistantArtifacts.push({ artifact_type: 'image', path: p.trim() });
+                        }
+                    });
+                }
             } else if (response.final_response && response.final_response.artifacts) {
                 assistantArtifacts = response.final_response.artifacts;
             }
@@ -190,6 +214,13 @@ function ChatConversation({ chatId, onBack }) {
     return (
         <div className="chat-conversation">
             <div className="conversation-header">
+                {onBack && (
+                    <button className="back-button" onClick={onBack} title="Zurück zur Übersicht">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                )}
                 <h2 className="conversation-title">Chat</h2>
             </div>
 
@@ -202,11 +233,11 @@ function ChatConversation({ chatId, onBack }) {
                         <div className="message-content">
                             {message.text}
                             {message.artifacts && message.artifacts.length > 0 && (
-                                <div className="message-artifacts" style={{ marginTop: '10px' }}>
+                                <div className="message-artifacts" style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                                     {message.artifacts.map((artifact, idx) => {
-                                        if (artifact.artifact_type === 'image' || (artifact.path && artifact.path.match(/\.(jpeg|jpg|gif|png)$/i))) {
+                                        if (artifact.artifact_type === 'image' || artifact.artifact_type === 'dashboard' || (artifact.path && artifact.path.match(/\.(jpeg|jpg|gif|png)$/i))) {
                                             const imgUrl = `http://localhost:8000${artifact.path}`;
-                                            const imgTitle = artifact.description || 'Generiertes Diagramm';
+                                            const imgTitle = artifact.description || 'Generiertes Dashboard';
 
                                             const handleDragStart = (e) => {
                                                 const data = {
@@ -264,6 +295,17 @@ function ChatConversation({ chatId, onBack }) {
                         </div>
                     </div>
                 ))}
+                {isLoading && (
+                    <div className="message message--assistant">
+                        <div className="message-content">
+                            <div className="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
             </div>
 
