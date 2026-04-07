@@ -22,7 +22,7 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >
-      <div style={{ display: isExpanded ? 'contents' : 'none' }}>
+      <div data-testid="sidebar-content-wrapper" style={{ display: isExpanded ? 'contents' : 'none' }}>
           {!activeChat && (
           <nav className="sidebar-main-nav">
             <button className={`sidebar-nav-item ${activePage === 'home' ? 'sidebar-nav-item--active' : ''}`} onClick={() => onPageChange('home')}>
@@ -47,7 +47,7 @@ function Sidebar({ isExpanded, isPinned, activePage, onPageChange, activeProject
           </nav>
           )}
 
-          <div className="sidebar-chat-section" style={{ display: showChat ? 'flex' : 'none', flexDirection: 'column' }}>
+          <div data-testid="sidebar-chat-section" className="sidebar-chat-section" style={{ display: showChat ? 'flex' : 'none', flexDirection: 'column' }}>
             {!activeChat && (
             <ChatPanel
               onNewChat={handleNewChat}

@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import App from './App';
+import { getDatasets } from './services/DatasetService/datasetService';
 
 // Mock ResizeObserver for DashboardCanvas
 global.ResizeObserver = class ResizeObserver {
@@ -7,8 +8,6 @@ global.ResizeObserver = class ResizeObserver {
     unobserve() {}
     disconnect() {}
 };
-
-import { getDatasets } from './services/DatasetService/datasetService';
 
 jest.mock('./services/DatasetService/datasetService', () => ({
     getDatasets: jest.fn(),

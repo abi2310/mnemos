@@ -76,9 +76,8 @@ describe('Sidebar Component', () => {
     // ===== Expand / Collapse =====
 
     test('versteckt Nav-Items mit CSS wenn collapsed', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={false} />);
-        // The container div is hidden via style display: none
-        expect(container.querySelector('div[style*="display: none"]')).toBeInTheDocument();
+        render(<Sidebar {...defaultProps} isExpanded={false} />);
+        expect(screen.getByTestId('sidebar-content-wrapper')).toHaveStyle({ display: 'none' });
     });
 
     test('rendert Nav-Items wenn expanded', () => {
@@ -149,16 +148,13 @@ describe('Sidebar Component', () => {
     // ===== Chat Section =====
 
     test('zeigt keinen Chat-Bereich wenn kein Projekt aktiv (via CSS)', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} activeProject={null} activeTab="explore" />);
-        // Chat section should have display: none
-        const chatSection = container.querySelector('.sidebar-chat-section');
-        expect(chatSection).toHaveStyle({ display: 'none' });
+        render(<Sidebar {...defaultProps} isExpanded={true} activeProject={null} activeTab="explore" />);
+        expect(screen.getByTestId('sidebar-chat-section')).toHaveStyle({ display: 'none' });
     });
 
     test('zeigt keinen Chat-Bereich bei Prepare-Tab (via CSS)', () => {
-        const { container } = render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="prepare" />);
-        const chatSection = container.querySelector('.sidebar-chat-section');
-        expect(chatSection).toHaveStyle({ display: 'none' });
+        render(<Sidebar {...defaultProps} isExpanded={true} activeProject={{ name: 'Test' }} activeTab="prepare" />);
+        expect(screen.getByTestId('sidebar-chat-section')).toHaveStyle({ display: 'none' });
     });
 
     test('zeigt Chat-Bereich bei Explore-Tab mit aktivem Projekt', () => {
