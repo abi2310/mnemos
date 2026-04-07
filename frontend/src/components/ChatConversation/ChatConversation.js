@@ -3,8 +3,9 @@ import './ChatConversation.css';
 import { chatApi } from './chatApi';
 import { getDatasets } from '../../services/DatasetService/datasetService';
 
-// Globales Mapping zwischen lokalen Frontend Mock-IDs (die aus ChatPanel kommen) und echten Backend-IDs
-const chatSessionMap = {};
+// Versuche bestehende Chat-Mappings aus dem Browser LocalStorage zu laden, damit 
+// der Chatverlauf (und die echte Backend-Chat-ID) bei einem F5-Reload nicht verloren geht.
+const chatSessionMap = JSON.parse(localStorage.getItem('mnemos_chat_sessions') || '{}');
 
 /**
  * ChatConversation Component
@@ -122,6 +123,7 @@ function ChatConversation({ chatId, onBack }) {
                 // Mappe den lokalen Mock-ID Status auf die persistente Backend ID!
                 if (chatId) {
                     chatSessionMap[chatId] = currentChatId;
+                    localStorage.setItem('mnemos_chat_sessions', JSON.stringify(chatSessionMap));
                 }
             }
 
