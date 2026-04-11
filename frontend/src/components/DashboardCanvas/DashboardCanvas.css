@@ -181,11 +181,14 @@
     border: none;
     border-radius: 8px;
     overflow: visible;
-    display: block; /* Verhindert Streckungen in Flex-Containern */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
     cursor: grab;
     box-shadow: none;
-    height: max-content !important; /* 🔥 Zwingt das Gitter-Fenster, exakt die Höhe des Diagramms anzunehmen (sicherer als fit-content auf absoluten Grid-Elementen) */
+    height: 100%;
+    min-height: 0;
 }
 
 .dashboard-widget:active {

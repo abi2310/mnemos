@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import GridLayout from 'react-grid-layout';
+import GridLayout from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './DashboardCanvas.css';
+
+const DEFAULT_STACK_X = 0;
+const DEFAULT_STACK_W = 4;
+
+const GRID_COLS = 12;
+const GRID_ROW_HEIGHT = 1;
+const GRID_MARGIN = 10;
+const GRID_PADDING = 10;
 
 function DashboardCanvas() {
     const [widgets, setWidgets] = useState([]);
@@ -23,7 +31,7 @@ function DashboardCanvas() {
         }
     }, []);
 
-    // 🔥 Bei Breitenänderung Höhen korrigieren
+    // Bei Breitenänderung Höhen korrigieren
     useEffect(() => {
         setLayout(prev =>
             prev.map(item => {
@@ -55,9 +63,9 @@ function DashboardCanvas() {
                     ...prev,
                     {
                         i: newId,
-                        x: (prev.length * 4) % 12,
+                        x: DEFAULT_STACK_X,
                         y: Infinity,
-                        w: 4,
+                        w: DEFAULT_STACK_W,
                         h: 20,
                         minW: 3,
                         minH: 5
@@ -92,10 +100,12 @@ function DashboardCanvas() {
                         ...prev,
                         {
                             i: newId,
-                            x: (prev.length * 4) % 12,
+                            x: DEFAULT_STACK_X,
                             y: Infinity,
-                            w: 4,
-                            h: 20
+                            w: DEFAULT_STACK_W,
+                            h: 20,
+                            minW: 3,
+                            minH: 5
                         }
                     ]);
                 }
@@ -111,12 +121,11 @@ function DashboardCanvas() {
         delete aspectRatiosRef.current[id];
     };
 
-    // 🔥 KORRIGIERTE Höhenberechnung (pixelgenau, OHNE Margin-Bug)
     const getHeightFromRatio = (w, ratio, containerWidth) => {
-        const margin = 10;
-        const cols = 12;
-        const rowHeight = 1;
-        const padding = 10;
+        const margin = GRID_MARGIN;
+        const cols = GRID_COLS;
+        const rowHeight = GRID_ROW_HEIGHT;
+        const padding = GRID_PADDING;
 
         const colWidth =
             (containerWidth - margin * (cols - 1) - padding * 2) / cols;
@@ -124,9 +133,7 @@ function DashboardCanvas() {
         const widthPx = w * colWidth + margin * (w - 1);
         const heightPx = widthPx * ratio;
 
-        // 🔥 KORREKTUR: Um die echte Grid "h" Einheit zu berechnen, müssen wir die Lücken (margin) mit einbeziehen. 
-        // Formel für die Pixelhöhe im React-Grid: heightPx = h * rowHeight + (h - 1) * margin
-        // Aufgelöst nach h: h = (heightPx + margin) / (rowHeight + margin)
+        // heightPx = h * rowHeight + (h - 1) * margin  →  h = (heightPx + margin) / (rowHeight + margin)
         return Math.max(1, Math.round((heightPx + margin) / (rowHeight + margin)));
     };
 
@@ -137,15 +144,11 @@ function DashboardCanvas() {
         aspectRatiosRef.current[id] = ratio;
 
         setLayout(prev =>
-            prev.map(item => {
-                if (item.i === id) {
-                    return {
-                        ...item,
-                        h: getHeightFromRatio(item.w, ratio, containerWidth)
-                    };
-                }
-                return item;
-            })
+            prev.map(item =>
+                item.i === id
+                    ? { ...item, h: getHeightFromRatio(item.w, ratio, containerWidth) }
+                    : item
+            )
         );
     };
 
@@ -160,11 +163,13 @@ function DashboardCanvas() {
                 >
                     <GridLayout
                         width={containerWidth}
-                        cols={12}
-                        rowHeight={1}
+                        cols={GRID_COLS}
+                        rowHeight={GRID_ROW_HEIGHT}
+                        margin={[GRID_MARGIN, GRID_MARGIN]}
+                        containerPadding={[GRID_PADDING, GRID_PADDING]}
                         layout={layout}
-                        margin={[10, 10]}
-                        containerPadding={[10, 10]}
+                        compactType={null}
+                        preventCollision
 
                         onLayoutChange={(newLayout) => {
                             const corrected = newLayout.map(item => {
