@@ -54,3 +54,6 @@ catboost_pool.bin
 
 # Backend uploaded files
 backend/storage/
+
+# Local SQLite (dev data)
+backend/mnemos.db
