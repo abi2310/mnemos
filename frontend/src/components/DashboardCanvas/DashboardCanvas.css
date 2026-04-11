@@ -199,6 +199,7 @@
 .widget-glass {
     position: relative;
     border-radius: 8px;
+    overflow: hidden; /* clippt das Bild an border-radius */
     transition: background 0.2s ease;
     width: 100%;
     height: max-content; /* Zwingend content-abhängig */
