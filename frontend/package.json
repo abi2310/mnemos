@@ -21,6 +21,11 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "jest": {
+    "moduleNameMapper": {
+      "^react-grid-layout/legacy$": "<rootDir>/node_modules/react-grid-layout/dist/legacy.js"
+    }
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
