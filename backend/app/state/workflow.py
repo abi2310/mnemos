@@ -10,6 +10,7 @@ from app.schemas.agent import (
     ChartSpec,
     ChatHistoryItem,
     CodeReviewResult,
+    DashboardSpec,
     DatasetProfile,
     DatasetSchemaField,
     FinalResponse,
@@ -43,6 +44,7 @@ class WorkflowState(BaseModel):
     approved: bool | None = None
     output_mode: OutputMode | None = None
     chart_spec: ChartSpec | None = None
+    dashboard_spec: DashboardSpec | None = None
     text_answer: TextAnswerSpec | None = None
     validation_issues: list[ValidationIssue] = Field(default_factory=list)
     review_issues: list[ReviewIssue] = Field(default_factory=list)

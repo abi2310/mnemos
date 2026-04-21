@@ -26,6 +26,9 @@ def build_agent_graph(deps: GraphDependencies):
     graph.add_node("generate_output_spec", _safe(nodes.generate_output_spec))
     graph.add_node("validate_output_spec", _safe(nodes.validate_output_spec))
     graph.add_node("render_artifact", _safe(nodes.render_artifact))
+    graph.add_node("generate_dashboard_spec", _safe(nodes.generate_dashboard_spec))
+    graph.add_node("validate_dashboard_spec", _safe(nodes.validate_dashboard_spec))
+    graph.add_node("render_dashboard_artifacts", _safe(nodes.render_dashboard_artifacts))
     graph.add_node("review_output", _safe(nodes.review_output))
     graph.add_node("finalize_response", _safe(nodes.finalize_response))
     graph.add_node("handle_error", _safe(nodes.handle_error))
@@ -42,8 +45,11 @@ def build_agent_graph(deps: GraphDependencies):
     graph.add_conditional_edges("build_analysis_plan", _route_after_plan)
     graph.add_conditional_edges("approval_gate", _route_after_approval)
     graph.add_conditional_edges("generate_output_spec", _route_after_output_spec)
+    graph.add_conditional_edges("generate_dashboard_spec", _route_after_dashboard_spec)
     graph.add_conditional_edges("validate_output_spec", _route_after_validation)
+    graph.add_conditional_edges("validate_dashboard_spec", _route_after_dashboard_validation)
     graph.add_conditional_edges("render_artifact", _route_after_render)
+    graph.add_edge("render_dashboard_artifacts", "finalize_response")
     graph.add_conditional_edges("review_output", _route_after_review)
     graph.add_edge("finalize_response", END)
     graph.add_edge("handle_error", END)
@@ -82,6 +88,8 @@ def _route_after_plan(state: WorkflowState) -> str:
         return "handle_error"
     if state.approval_required and state.approved is not True:
         return "approval_gate"
+    if state.output_mode == OutputMode.DASHBOARD:
+        return "generate_dashboard_spec"
     if state.output_mode == OutputMode.FREE_CODE:
         return "generate_free_code"
     return "generate_output_spec"
@@ -92,6 +100,8 @@ def _route_after_approval(state: WorkflowState) -> str:
         return "handle_error"
     if state.approved is False:
         return "finalize_response"
+    if state.output_mode == OutputMode.DASHBOARD:
+        return "generate_dashboard_spec"
     if state.output_mode == OutputMode.FREE_CODE:
         return "generate_free_code"
     return "generate_output_spec"
@@ -105,6 +115,10 @@ def _route_after_output_spec(state: WorkflowState) -> str:
     return "validate_output_spec"
 
 
+def _route_after_dashboard_spec(state: WorkflowState) -> str:
+    return "handle_error" if state.error else "validate_dashboard_spec"
+
+
 def _route_after_validation(state: WorkflowState) -> str:
     if state.error:
         return "handle_error"
@@ -115,6 +129,18 @@ def _route_after_validation(state: WorkflowState) -> str:
     if state.validation_issues:
         return "handle_error"
     return "render_artifact"
+
+
+def _route_after_dashboard_validation(state: WorkflowState) -> str:
+    if state.error:
+        return "handle_error"
+    if state.should_request_clarification:
+        return "clarification_gate"
+    if state.should_regenerate_spec and state.validation_attempts < 3:
+        return "generate_dashboard_spec"
+    if state.validation_issues:
+        return "handle_error"
+    return "render_dashboard_artifacts"
 
 
 def _route_after_render(state: WorkflowState) -> str:

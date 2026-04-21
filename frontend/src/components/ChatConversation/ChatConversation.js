@@ -7,6 +7,42 @@ import { getDatasets } from '../../services/DatasetService/datasetService';
 // der Chatverlauf (und die echte Backend-Chat-ID) bei einem F5-Reload nicht verloren geht.
 const chatSessionMap = JSON.parse(localStorage.getItem('mnemos_chat_sessions') || '{}');
 
+function parseArtifactsFromGeneratedImage(generatedImage) {
+    if (!generatedImage) {
+        return [];
+    }
+
+    const parsedArtifacts = [];
+    try {
+        const parsed = JSON.parse(generatedImage);
+        if (Array.isArray(parsed)) {
+            parsed.forEach((path) => {
+                if (typeof path === 'string' && path.trim()) {
+                    parsedArtifacts.push({ artifact_type: 'image', path: path.trim() });
+                }
+            });
+        } else if (typeof generatedImage === 'string' && generatedImage.trim()) {
+            parsedArtifacts.push({ artifact_type: 'image', path: generatedImage.trim() });
+        }
+    } catch (e) {
+        const paths = generatedImage.split(',');
+        paths.forEach((path) => {
+            if (path.trim()) {
+                parsedArtifacts.push({ artifact_type: 'image', path: path.trim() });
+            }
+        });
+    }
+
+    return parsedArtifacts;
+}
+
+function normalizeArtifacts(artifacts) {
+    if (!Array.isArray(artifacts)) {
+        return [];
+    }
+    return artifacts.filter((artifact) => artifact && artifact.path);
+}
+
 /**
  * ChatConversation Component
  *
@@ -35,32 +71,11 @@ function ChatConversation({ chatId, onBack }) {
                         const formattedMessages = messagesData
                             .filter(msg => msg.role !== 'system')
                             .map(msg => {
-                                let parsedArtifacts = [];
-                                if (msg.generated_image) {
-                                    // Handle both comma-separated strings or JSON arrays if backend sends multiple
-                                    try {
-                                        const parsed = JSON.parse(msg.generated_image);
-                                        if (Array.isArray(parsed)) {
-                                            parsed.forEach(p => parsedArtifacts.push({ artifact_type: 'image', path: p }));
-                                        } else {
-                                            parsedArtifacts.push({ artifact_type: 'image', path: msg.generated_image });
-                                        }
-                                    } catch (e) {
-                                        // Fallback to comma separation
-                                        const paths = msg.generated_image.split(',');
-                                        paths.forEach(p => {
-                                            if (p.trim()) {
-                                                parsedArtifacts.push({ artifact_type: 'image', path: p.trim() });
-                                            }
-                                        });
-                                    }
-                                }
-
                                 return {
                                     id: msg.id,
                                     type: msg.role === 'user' ? 'user' : 'assistant',
                                     text: msg.content,
-                                    artifacts: parsedArtifacts,
+                                    artifacts: parseArtifactsFromGeneratedImage(msg.generated_image),
                                     timestamp: new Date(msg.created_at || Date.now())
                                 };
                             });
@@ -155,24 +170,10 @@ function ChatConversation({ chatId, onBack }) {
             }
 
             // Diagramme / Bilder extrahieren
-            if (response.assistant_message && response.assistant_message.generated_image) {
-                try {
-                    const parsed = JSON.parse(response.assistant_message.generated_image);
-                    if (Array.isArray(parsed)) {
-                        parsed.forEach(p => assistantArtifacts.push({ artifact_type: 'image', path: p }));
-                    } else {
-                        assistantArtifacts.push({ artifact_type: 'image', path: response.assistant_message.generated_image });
-                    }
-                } catch (e) {
-                    const paths = response.assistant_message.generated_image.split(',');
-                    paths.forEach(p => {
-                        if (p.trim()) {
-                            assistantArtifacts.push({ artifact_type: 'image', path: p.trim() });
-                        }
-                    });
-                }
-            } else if (response.final_response && response.final_response.artifacts) {
-                assistantArtifacts = response.final_response.artifacts;
+            if (response.final_response && response.final_response.artifacts) {
+                assistantArtifacts = normalizeArtifacts(response.final_response.artifacts);
+            } else if (response.assistant_message && response.assistant_message.generated_image) {
+                assistantArtifacts = parseArtifactsFromGeneratedImage(response.assistant_message.generated_image);
             }
 
             const assistantMessage = {

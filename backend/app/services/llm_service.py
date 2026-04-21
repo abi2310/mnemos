@@ -14,6 +14,8 @@ from app.schemas.agent import (
     ChartType,
     ClarificationRequest,
     CodeReviewResult,
+    DashboardPanelSpec,
+    DashboardSpec,
     DatasetProfile,
     FreeCodeSpec,
     IntentResult,
@@ -142,6 +144,30 @@ class LLMService:
                 f"Question: {question}\n"
                 f"Plan: {plan.model_dump_json()}\n"
                 f"Dataset profile: {self._profile_summary(profile)}\n"
+            ),
+            fallback=fallback,
+        )
+
+    def generate_dashboard_spec(
+        self,
+        question: str,
+        plan: AnalysisPlan,
+        profile: DatasetProfile,
+        revision_context: list[str] | None = None,
+    ) -> DashboardSpec:
+        fallback = self._heuristic_dashboard_spec(question, plan, profile)
+        return self._invoke_structured(
+            response_model=DashboardSpec,
+            system_prompt=(
+                "Du bist ein Analytics-Assistent. Antworte immer auf Deutsch. "
+                "Erstelle eine Dashboard-Spezifikation mit mehreren klar abgegrenzten Diagramm-Panels. "
+                "Jedes Panel muss deterministisch renderbar sein und nur vorhandene Felder nutzen."
+            ),
+            user_prompt=(
+                f"Question: {question}\n"
+                f"Plan: {plan.model_dump_json()}\n"
+                f"Dataset profile: {self._profile_summary(profile)}\n"
+                f"Revision context: {revision_context or []}\n"
             ),
             fallback=fallback,
         )
@@ -288,26 +314,42 @@ class LLMService:
 
     def _heuristic_intent(self, question: str, profile: DatasetProfile) -> IntentResult:
         lowered = question.lower()
+        _dashboard_keywords = (
+            "dashboard", "mehrere diagramme", "mehreren diagrammen", "mehrere charts",
+            "mehrere plots", "übersicht", "overview",
+        )
         _complex_keywords = (
             "heatmap", "korrelation", "korrelationsmatrix", "regression",
             "cluster", "pivot", "subplots", "mehrere diagramme",
         )
         _chart_keywords = ("chart", "plot", "diagram", "visual", "zeige", "zeichne")
+        is_dashboard = any(kw in lowered for kw in _dashboard_keywords)
         is_complex = any(kw in lowered for kw in _complex_keywords)
         is_chart = any(kw in lowered for kw in _chart_keywords)
-        if is_complex or is_chart:
+        if is_dashboard:
+            output_mode = OutputMode.DASHBOARD
+        elif is_complex:
             output_mode = OutputMode.FREE_CODE
+        elif is_chart:
+            output_mode = OutputMode.CHART
         else:
             output_mode = OutputMode.TEXT
         referenced_columns = [column.name for column in profile.columns if column.name.lower() in lowered]
         requires_clarification = (
-            (output_mode == OutputMode.FREE_CODE and len(question.split()) < 4)
+            (output_mode in {OutputMode.FREE_CODE, OutputMode.DASHBOARD} and len(question.split()) < 4)
             or ("best" in lowered and not referenced_columns)
             or ("compare" in lowered and len(referenced_columns) < 2 and len(profile.numeric_columns) > 1)
         )
         multiple_valid_solutions = "trend" in lowered and bool(profile.time_columns) and len(profile.numeric_columns) > 1
         approaches = []
-        if output_mode in {OutputMode.CHART, OutputMode.FREE_CODE}:
+        if output_mode == OutputMode.DASHBOARD:
+            approaches.extend(
+                [
+                    "metric overview dashboard",
+                    "time trend dashboard" if profile.time_columns else "categorical comparison dashboard",
+                ]
+            )
+        elif output_mode in {OutputMode.CHART, OutputMode.FREE_CODE}:
             approaches.append("grouped comparison chart")
             if profile.time_columns:
                 approaches.append("time trend chart")
@@ -338,10 +380,14 @@ class LLMService:
     ) -> AnalysisPlan:
         selected_columns = intent.referenced_columns[:]
         if not selected_columns:
-            if intent.recommended_output_mode == OutputMode.FREE_CODE and profile.categorical_columns:
+            if intent.recommended_output_mode in {OutputMode.FREE_CODE, OutputMode.DASHBOARD} and profile.categorical_columns:
                 selected_columns.append(profile.categorical_columns[0])
             if profile.numeric_columns:
                 selected_columns.append(profile.numeric_columns[0])
+            if intent.recommended_output_mode == OutputMode.DASHBOARD and len(profile.numeric_columns) > 1:
+                selected_columns.extend(
+                    column for column in profile.numeric_columns[1:3] if column not in selected_columns
+                )
         approval_required = "sensitive" in (clarification_answer or "").lower()
         return AnalysisPlan(
             objective=question,
@@ -358,6 +404,68 @@ class LLMService:
             approval_required=approval_required,
             approval_reason="The clarification answer marked this as sensitive." if approval_required else None,
             rationale="The plan keeps the workflow deterministic and avoids arbitrary code execution.",
+        )
+
+    def _heuristic_dashboard_spec(
+        self, question: str, plan: AnalysisPlan, profile: DatasetProfile
+    ) -> DashboardSpec:
+        x_column = profile.time_columns[0] if profile.time_columns else (
+            profile.categorical_columns[0] if profile.categorical_columns else profile.columns[0].name
+        )
+        candidate_metrics = [
+            column for column in (plan.selected_columns + profile.numeric_columns) if column != x_column
+        ]
+        ordered_metrics: list[str] = []
+        for column in candidate_metrics:
+            if column not in ordered_metrics:
+                ordered_metrics.append(column)
+
+        panels: list[DashboardPanelSpec] = []
+        for index, metric in enumerate(ordered_metrics[:4], start=1):
+            chart_type = ChartType.LINE if x_column in profile.time_columns else ChartType.BAR
+            panels.append(
+                DashboardPanelSpec(
+                    panel_id=f"panel_{index}",
+                    title=f"{metric.title()} nach {x_column}",
+                    chart_spec=ChartSpec(
+                        chart_type=chart_type,
+                        x_column=x_column,
+                        y_column=metric,
+                        aggregation=AggregationOp.MEAN if chart_type == ChartType.BAR else AggregationOp.MEAN,
+                        sort_direction=SortDirection.DESC if chart_type == ChartType.BAR else None,
+                        top_n=10 if chart_type == ChartType.BAR else None,
+                        title=f"{metric.title()} nach {x_column}",
+                        rationale="The panel compares a key metric across the primary dashboard dimension.",
+                    ),
+                    rationale=f"Highlights the relationship between {metric} and {x_column}.",
+                )
+            )
+
+        if not panels:
+            fallback_column = profile.numeric_columns[0] if profile.numeric_columns else profile.columns[0].name
+            panels.append(
+                DashboardPanelSpec(
+                    panel_id="panel_1",
+                    title=f"Verteilung von {fallback_column}",
+                    chart_spec=ChartSpec(
+                        chart_type=ChartType.HISTOGRAM,
+                        x_column=fallback_column,
+                        y_column=None,
+                        aggregation=None,
+                        sort_direction=None,
+                        top_n=None,
+                        title=f"Verteilung von {fallback_column}",
+                        rationale="Fallback panel for a single available metric.",
+                    ),
+                    rationale="Provides at least one chart when only one usable metric is available.",
+                )
+            )
+
+        return DashboardSpec(
+            title=f"Dashboard: {question[:80]}",
+            panels=panels,
+            layout="grid",
+            rationale="The dashboard combines multiple complementary views over the profiled dataset.",
         )
 
     def _heuristic_chart_spec(self, question: str, plan: AnalysisPlan, profile: DatasetProfile) -> ChartSpec:
