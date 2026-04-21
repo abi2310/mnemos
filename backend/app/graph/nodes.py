@@ -20,7 +20,6 @@ from app.schemas.agent import (
     OutputMode,
     ArtifactRef,
     ArtifactType,
-    DashboardSpec,
     SandboxResult,
 )
 from app.services.dataset_profiler import DatasetProfiler
