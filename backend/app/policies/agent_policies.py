@@ -7,6 +7,7 @@ from app.schemas.agent import (
     AnalysisPlan,
     ChartSpec,
     ChartType,
+    DashboardSpec,
     DatasetProfile,
     IntentResult,
     ValidationIssue,
@@ -29,7 +30,7 @@ class AgentPolicyEngine(BaseModel):
     def needs_approval(self, plan: AnalysisPlan, profile: DatasetProfile) -> bool:
         if plan.approval_required:
             return True
-        if plan.output_mode.value == "chart" and profile.row_count > 250_000:
+        if plan.output_mode.value in {"chart", "dashboard"} and profile.row_count > 250_000:
             return True
         return False
 
@@ -132,4 +133,40 @@ class AgentPolicyEngine(BaseModel):
             issues=issues,
             should_reask=should_reask,
             should_regenerate=should_regenerate,
+        )
+
+    def validate_dashboard_spec(self, spec: DashboardSpec, profile: DatasetProfile) -> ValidationResult:
+        issues: list[ValidationIssue] = []
+        if not spec.panels:
+            issues.append(
+                ValidationIssue(
+                    code="dashboard_requires_panels",
+                    message="A dashboard must contain at least one panel.",
+                    field_name="panels",
+                )
+            )
+        if len(spec.panels) > 6:
+            issues.append(
+                ValidationIssue(
+                    code="dashboard_too_many_panels",
+                    message="Dashboard requests are limited to 6 panels.",
+                    field_name="panels",
+                )
+            )
+
+        should_reask = False
+        should_regenerate = False
+        for panel in spec.panels:
+            panel_validation = self.validate_chart_spec(panel.chart_spec, profile)
+            if not panel_validation.is_valid:
+                issues.extend(panel_validation.issues)
+            should_reask = should_reask or panel_validation.should_reask
+            should_regenerate = should_regenerate or panel_validation.should_regenerate
+
+        is_valid = not any(issue.severity == "error" for issue in issues)
+        return ValidationResult(
+            is_valid=is_valid,
+            issues=issues,
+            should_reask=should_reask,
+            should_regenerate=should_regenerate or not is_valid,
         )

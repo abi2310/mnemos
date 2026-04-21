@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import get_settings
 from app.main import app
-from app.schemas.agent import ClarificationRequest, DatasetProfile, IntentResult, OutputMode
+from app.schemas.agent import AnalysisPlan, ClarificationRequest, DashboardPanelSpec, DashboardSpec, DatasetProfile, IntentResult, OutputMode, ChartSpec, ChartType
 from app.services.analysis_agent import AnalysisAgentService
 from app.services.chat import ChatService
 from app.core import dependencies as core_deps
@@ -117,6 +117,107 @@ def client_forced_clarification(test_db):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture
+def client_dashboard_mode(test_db, tmp_path):
+    """TestClient that always drives the graph into dashboard generation."""
+
+    class FakeDatasetService:
+        def get(self, dataset_id: str):
+            return type("Meta", (), {"dataset_id": dataset_id, "storage_key": "fake.csv"})()
+
+        def _load_dataframe(self, meta, use_cleaned: bool = False, max_rows: int | None = None):
+            import pandas as pd
+
+            return pd.DataFrame(
+                {
+                    "monat": ["Jan", "Feb", "Mar"],
+                    "umsatz": [1, 2, 3],
+                    "gewinn": [4, 5, 6],
+                }
+            )
+
+    class DashboardLLM:
+        def interpret_request(self, question: str, history_text: str, profile: DatasetProfile) -> IntentResult:
+            return IntentResult(
+                objective=question,
+                recommended_output_mode=OutputMode.DASHBOARD,
+                requires_clarification=False,
+                multiple_valid_solutions=False,
+                ambiguity_reason=None,
+                candidate_approaches=["dashboard"],
+                referenced_columns=["monat", "umsatz", "gewinn"],
+                confidence=0.95,
+            )
+
+        def build_analysis_plan(self, question: str, clarification_answer, intent: IntentResult, profile: DatasetProfile) -> AnalysisPlan:
+            return AnalysisPlan(
+                objective=question,
+                strategy_summary="Build a multi-chart dashboard.",
+                steps=["Create dashboard panels"],
+                selected_columns=["monat", "umsatz", "gewinn"],
+                filters=[],
+                aggregations=[],
+                output_mode=OutputMode.DASHBOARD,
+                approval_required=False,
+                approval_reason=None,
+                rationale="Dashboard requested explicitly.",
+            )
+
+        def generate_dashboard_spec(self, question: str, plan: AnalysisPlan, profile: DatasetProfile, revision_context=None) -> DashboardSpec:
+            return DashboardSpec(
+                title="KPI Dashboard",
+                layout="grid",
+                rationale="Two business metrics",
+                panels=[
+                    DashboardPanelSpec(
+                        panel_id="umsatz",
+                        title="Umsatz nach Monat",
+                        rationale="Revenue trend",
+                        chart_spec=ChartSpec(
+                            chart_type=ChartType.BAR,
+                            x_column="monat",
+                            y_column="umsatz",
+                            aggregation=None,
+                            sort_direction=None,
+                            top_n=None,
+                            title="Umsatz nach Monat",
+                            rationale="Chart panel",
+                        ),
+                    ),
+                    DashboardPanelSpec(
+                        panel_id="gewinn",
+                        title="Gewinn nach Monat",
+                        rationale="Profit trend",
+                        chart_spec=ChartSpec(
+                            chart_type=ChartType.BAR,
+                            x_column="monat",
+                            y_column="gewinn",
+                            aggregation=None,
+                            sort_direction=None,
+                            top_n=None,
+                            title="Gewinn nach Monat",
+                            rationale="Chart panel",
+                        ),
+                    ),
+                ],
+            )
+
+    service = ChatService(dataset_service=FakeDatasetService(), storage_dir=tmp_path)
+    service.engine = test_db
+    service.analysis_agent = AnalysisAgentService(
+        dataset_service=service.dataset_service,
+        storage_dir=tmp_path,
+        llm_service=DashboardLLM(),
+    )
+
+    app.dependency_overrides[core_deps.get_chat_service] = lambda: service
+
+    with TestClient(app) as c:
+        yield c
+
+    app.dependency_overrides.clear()
+
+
 def test_create_chat(client):
     """Test creating a chat via API."""
     chat_data = {
@@ -211,6 +312,25 @@ def test_add_message_returns_clarification_interrupt_for_ambiguous_chart_request
     assert body["final_response"] is None
 
 
+def test_add_message_returns_multiple_dashboard_artifacts(client_dashboard_mode):
+    chat_data = {"dataset_id": "dataset456"}
+    resp = client_dashboard_mode.post("/api/v1/chats", json=chat_data)
+    chat_id = resp.json()["id"]
+
+    message_data = {
+        "role": "user",
+        "content": "Erstelle mir ein Dashboard mit Umsatz und Gewinn",
+    }
+    resp = client_dashboard_mode.post(f"/api/v1/chats/{chat_id}/messages", json=message_data)
+    assert resp.status_code == 201, resp.text
+
+    body = resp.json()
+    assert body["status"] == "completed"
+    assert body["final_response"]["output_mode"] == "dashboard"
+    assert len(body["final_response"]["artifacts"]) == 2
+    assert all(artifact["mime_type"] == "image/png" for artifact in body["final_response"]["artifacts"])
+
+
 def test_add_message_to_nonexistent_chat(client):
     """Test adding a message to non-existent chat returns 404."""
     message_data = {
@@ -295,6 +415,6 @@ def test_chat_with_messages_integration(client):
     assert body["messages"][3]["role"] == "user"
     assert body["messages"][3]["content"] == "Create a bar chart for col1 by col2"
     assert body["messages"][4]["role"] == "assistant"
-    assert body["messages"][4]["generated_code"] is not None
-    assert isinstance(body["messages"][4]["generated_code"], str)
-    assert body["messages"][4]["generated_code"].strip() != ""
+    assert body["messages"][4]["generated_image"] is not None
+    assert isinstance(body["messages"][4]["generated_image"], str)
+    assert body["messages"][4]["generated_image"].endswith(".png")

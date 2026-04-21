@@ -7,6 +7,8 @@ from app.schemas.agent import (
     ChartSpec,
     ChartType,
     ColumnProfile,
+    DashboardPanelSpec,
+    DashboardSpec,
     DatasetProfile,
     NumericSummary,
     OutputMode,
@@ -17,6 +19,22 @@ from app.state.workflow import WorkflowState
 
 class _NoopDatasetService:
     pass
+
+
+class _DatasetService:
+    def get(self, dataset_id: str):
+        return type("Meta", (), {"dataset_id": dataset_id, "storage_key": "fake.csv"})()
+
+    def _load_dataframe(self, meta, use_cleaned: bool = False, max_rows: int | None = None):
+        import pandas as pd
+
+        return pd.DataFrame(
+            {
+                "monat": ["Jan", "Feb", "Mar"],
+                "umsatz": [100, 120, 140],
+                "gewinn": [20, 30, 35],
+            }
+        )
 
 
 class _NoopLLMService:
@@ -127,3 +145,65 @@ def test_clarification_gate_skips_reinterrupt_when_answer_is_usable() -> None:
 
     assert update["clarification_needed"] is False
     assert update["should_request_clarification"] is False
+
+
+def test_render_dashboard_artifacts_creates_multiple_images(tmp_path) -> None:
+    deps = GraphDependencies(
+        dataset_service=_DatasetService(),  # type: ignore[arg-type]
+        profiler=DatasetProfiler(),
+        llm_service=_NoopLLMService(),  # type: ignore[arg-type]
+        renderer=ChartRenderer(),
+        policies=AgentPolicyEngine(),
+        storage_dir=tmp_path,
+    )
+    nodes = AnalysisNodes(deps)
+
+    state = WorkflowState(
+        chat_id=7,
+        request_id="dashboard-1",
+        dataset_id="dataset-test",
+        output_mode=OutputMode.DASHBOARD,
+        dashboard_spec=DashboardSpec(
+            title="Sales Dashboard",
+            layout="grid",
+            rationale="Test dashboard",
+            panels=[
+                DashboardPanelSpec(
+                    panel_id="umsatz",
+                    title="Umsatz nach Monat",
+                    rationale="Revenue trend",
+                    chart_spec=ChartSpec(
+                        chart_type=ChartType.BAR,
+                        x_column="monat",
+                        y_column="umsatz",
+                        aggregation=None,
+                        sort_direction=None,
+                        top_n=None,
+                        title="Umsatz nach Monat",
+                        rationale="Bar chart",
+                    ),
+                ),
+                DashboardPanelSpec(
+                    panel_id="gewinn",
+                    title="Gewinn nach Monat",
+                    rationale="Profit trend",
+                    chart_spec=ChartSpec(
+                        chart_type=ChartType.BAR,
+                        x_column="monat",
+                        y_column="gewinn",
+                        aggregation=None,
+                        sort_direction=None,
+                        top_n=None,
+                        title="Gewinn nach Monat",
+                        rationale="Bar chart",
+                    ),
+                ),
+            ],
+        ),
+    )
+
+    update = nodes.render_dashboard_artifacts(state)
+
+    assert len(update["artifacts"]) == 2
+    assert all(artifact.path.startswith("/storage/images/7/dashboard-1/") for artifact in update["artifacts"])
+    assert len(update["artifacts_metadata"]["artifact_paths"]) == 2
