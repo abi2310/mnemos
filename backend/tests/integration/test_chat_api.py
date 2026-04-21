@@ -1,3 +1,4 @@
+import json
 import pytest
 from fastapi.testclient import TestClient
 
@@ -417,4 +418,7 @@ def test_chat_with_messages_integration(client):
     assert body["messages"][4]["role"] == "assistant"
     assert body["messages"][4]["generated_image"] is not None
     assert isinstance(body["messages"][4]["generated_image"], str)
-    assert body["messages"][4]["generated_image"].endswith(".png")
+    generated_images = json.loads(body["messages"][4]["generated_image"])
+    assert isinstance(generated_images, list)
+    assert generated_images
+    assert all(path.endswith(".png") for path in generated_images)

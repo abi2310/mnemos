@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 from typing import Any, List, cast
 
@@ -177,17 +178,7 @@ class ChatService:
 
             assistant_content = self._assistant_content_from_execution(execution_result)
             generated_code = execution_result.workflow_state.free_code_spec.code if execution_result.workflow_state.free_code_spec else None
-            generated_image = None
-            if execution_result.final_response and execution_result.final_response.artifacts:
-                first_image = next(
-                    (
-                        artifact.path
-                        for artifact in execution_result.final_response.artifacts
-                        if artifact.mime_type.startswith("image/")
-                    ),
-                    None,
-                )
-                generated_image = first_image
+            generated_image = self._serialize_image_artifacts(execution_result)
 
             assistant_message = self._create_message(
                 session=session,
@@ -224,6 +215,18 @@ class ChatService:
         if execution_result.final_response is not None:
             return execution_result.final_response.message
         return "(keine Antwort generiert)"
+
+    def _serialize_image_artifacts(self, execution_result) -> str | None:
+        if not execution_result.final_response or not execution_result.final_response.artifacts:
+            return None
+        image_paths = [
+            artifact.path
+            for artifact in execution_result.final_response.artifacts
+            if artifact.mime_type.startswith("image/")
+        ]
+        if not image_paths:
+            return None
+        return json.dumps(image_paths, ensure_ascii=True)
 
     def _last_assistant_looks_like_clarification(self, messages: list[MessageDB]) -> bool:
         if not messages:
