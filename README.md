@@ -68,6 +68,11 @@ mnemos/
 
 If no `OPENAI_API_KEY` is configured, the backend falls back to heuristic analysis behavior where possible. With an API key, the LLM-powered structured-output path is used.
 
+## Preview
+
+https://github.com/user-attachments/assets/649355b5-24c2-4342-a01a-836ea1b02655
+
+
 ## Getting Started
 
 ### Prerequisites
