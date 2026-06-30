@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MNEMOS.AI — Conversational Data Analysis</title>
+  <meta name="description" content="Upload tabular datasets, ask questions in natural language, and receive profiles, charts, and dashboards instantly."/>
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://abi2310.github.io/mnemos/"/>
+  <meta property="og:title" content="MNEMOS.AI — Conversational Data Analysis"/>
+  <meta property="og:description" content="Upload tabular datasets, ask questions in natural language, and receive profiles, charts, and dashboards instantly."/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="MNEMOS.AI — Conversational Data Analysis"/>
+  <meta name="twitter:description" content="Upload tabular datasets, ask questions in natural language, and receive profiles, charts, and dashboards instantly."/>
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://abi2310.github.io/mnemos/"/>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     CSS VARIABLES
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  :root {
+    --color-bg:             #060606;
+    --color-bg-2:           #0e0e0e;
+    --color-bg-3:           #161616;
+    --color-accent:         #E8480C;
+    --color-accent-2:       #F56020;
+    --color-accent-dim:     rgba(232, 72, 12, 0.12);
+    --color-accent-border:  rgba(232, 72, 12, 0.3);
+    --color-text-primary:   #ededed;
+    --color-text-secondary: #737373;
+    --color-text-muted:     #3d3d3d;
+    --color-card-bg:        rgba(255,255,255,0.025);
+    --color-border:         rgba(255,255,255,0.07);
+    --color-border-hi:      rgba(255,255,255,0.12);
+    --font:                 'Geist', system-ui, sans-serif;
+    --mono:                 'Geist Mono', monospace;
+    --ease:                 cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-d:               cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     RESET & BASE
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { text-decoration: none; color: inherit; }
+  ul { list-style: none; }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     LAYOUT
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .wrap    { max-width: 1160px; margin: 0 auto; padding: 0 40px; }
+  .wrap-sm { max-width: 800px;  margin: 0 auto; padding: 0 40px; }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     SCROLL REVEAL
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .r {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 600ms var(--ease), transform 600ms var(--ease);
+  }
+  .r.in { opacity: 1; transform: none; }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     NAVBAR
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 18px 0;
+    background: rgba(6,6,6,0.7);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .navbar .wrap { display: flex; align-items: center; justify-content: space-between; }
+  .nav-logo {
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .nav-logo em { color: var(--color-accent); font-style: normal; }
+  .nav-links {
+    display: flex; gap: 2px; position: absolute; left: 50%; transform: translateX(-50%);
+  }
+  .nav-links a {
+    font-size: 13px; color: var(--color-text-secondary);
+    padding: 6px 14px; border-radius: 7px;
+    transition: color 150ms, background 150ms;
+  }
+  .nav-links a:hover { color: var(--color-text-primary); background: rgba(255,255,255,0.05); }
+  .nav-cta {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--color-accent); color: #fff;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 18px; border-radius: 8px;
+    transition: background 150ms, transform 110ms var(--ease-d);
+  }
+  .nav-cta:hover { background: var(--color-accent-2); }
+  .nav-cta:active { transform: scale(0.97); }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     HERO
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: 160px 0 0;
+    text-align: center;
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.038) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.038) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
+    mask-image: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
+  }
+
+  .hero-glow {
+    position: absolute;
+    bottom: -120px; left: 50%;
+    transform: translateX(-50%);
+    width: 1100px; height: 750px;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(
+      ellipse at 50% 88%,
+      rgba(232, 72, 12, 0.55) 0%,
+      rgba(232, 72, 12, 0.22) 28%,
+      rgba(200, 55, 8, 0.07) 52%,
+      transparent 70%
+    );
+    filter: blur(52px);
+  }
+
+  .hero-noise {
+    position: absolute; inset: 0;
+    opacity: 0.025; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  .hero-content { position: relative; z-index: 2; }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--color-accent-dim);
+    border: 1px solid var(--color-accent-border);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 32px;
+  }
+  .badge-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--color-accent);
+    animation: blink 2.6s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.35; }
+  }
+
+  .hero-h1 {
+    font-size: clamp(38px, 5.5vw, 76px);
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1.06;
+    color: var(--color-text-primary);
+    max-width: 820px;
+    margin: 0 auto 22px;
+  }
+  .hero-h1 .accent {
+    font-weight: 500;
+    color: var(--color-accent);
+  }
+
+  .hero-sub {
+    font-size: clamp(15px, 1.5vw, 17px);
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+    max-width: 500px;
+    margin: 0 auto 44px;
+  }
+
+  .hero-actions {
+    display: flex; gap: 12px;
+    justify-content: center; align-items: center;
+    margin-bottom: 64px; flex-wrap: wrap;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--color-accent); color: #fff;
+    font-family: var(--font); font-size: 14px; font-weight: 600;
+    padding: 13px 26px; border-radius: 10px; border: none; cursor: pointer;
+    transition: background 150ms, transform 110ms var(--ease-d);
+  }
+  .btn-primary:hover { background: var(--color-accent-2); }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; color: var(--color-text-secondary);
+    font-family: var(--font); font-size: 14px; font-weight: 500;
+    padding: 13px 22px; border-radius: 10px;
+    border: 1px solid var(--color-border-hi);
+    transition: color 150ms, border-color 150ms, background 150ms;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { color: var(--color-text-primary); border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.03); }
+
+  /* ── App window / video ── */
+  .hero-window-wrap {
+    position: relative; z-index: 2;
+    max-width: 1060px; margin: 0 auto;
+  }
+  .hero-window {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 5px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 32px 80px rgba(0,0,0,0.7);
+  }
+  .window-in {
+    background: #0b0b0b;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .window-bar {
+    display: flex; align-items: center; gap: 7px;
+    padding: 11px 16px;
+    background: #111;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .wdot { width: 10px; height: 10px; border-radius: 50%; }
+  .wdot.wd-r { background: #FF5F56; }
+  .wdot.wd-y { background: #FFBD2E; }
+  .wdot.wd-g { background: #27C93F; }
+  .wurl {
+    margin-left: 10px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 5px; padding: 3px 12px;
+    font-family: var(--mono); font-size: 10px;
+    color: rgba(255,255,255,0.38);
+  }
+  .window-body {
+    aspect-ratio: 16/9;
+    position: relative;
+    overflow: hidden;
+    background: #080808;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     SHARED SECTION STYLES
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .section { padding: 112px 0; }
+  .section-sm { padding: 80px 0; }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-border-hi), transparent);
+  }
+
+  .pill-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--color-accent-dim);
+    border: 1px solid var(--color-accent-border);
+    border-radius: 999px; padding: 4px 12px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-accent); margin-bottom: 16px;
+  }
+  .pill-badge::before { content: '✦'; font-size: 8px; }
+
+  .section-h2 {
+    font-size: clamp(26px, 3vw, 42px);
+    font-weight: 600; letter-spacing: -0.025em; line-height: 1.1;
+    color: var(--color-text-primary); margin-bottom: 16px;
+  }
+  .section-sub {
+    font-size: 15px; color: var(--color-text-secondary);
+    line-height: 1.75; max-width: 480px;
+  }
+  .section-sub.center { margin: 0 auto; text-align: center; max-width: 560px; }
+
+  .img-gradient-wrap {
+    position: relative;
+  }
+  .img-gradient-wrap::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 80px; z-index: 1; pointer-events: none;
+    background: linear-gradient(to bottom, var(--color-bg) 0%, transparent 100%);
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     BUILT ON
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .builton { padding: 96px 0; }
+  .builton-header { text-align: center; margin-bottom: 64px; }
+  .builton-label {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--color-accent); margin-bottom: 16px;
+  }
+  .builton-h2 {
+    font-size: clamp(24px, 2.8vw, 38px);
+    font-weight: 600; letter-spacing: -0.025em; line-height: 1.1;
+    color: var(--color-text-primary); margin-bottom: 12px;
+  }
+  .builton-sub {
+    font-size: 15px; color: var(--color-text-secondary);
+    line-height: 1.7; max-width: 460px; margin: 0 auto;
+  }
+  .builton-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .builton-card {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    transition: border-color 220ms, background 220ms, transform 220ms var(--ease);
+  }
+  .builton-card:hover {
+    border-color: var(--color-accent-border);
+    background: rgba(232,72,12,0.03);
+    transform: translateY(-2px);
+  }
+  .builton-name {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    color: var(--color-text-primary); letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+  .builton-role {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--color-accent); opacity: 0.8; margin-bottom: 10px;
+  }
+  .builton-desc {
+    font-size: 13px; color: var(--color-text-secondary);
+    line-height: 1.65;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     FEATURES
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .features { padding: 112px 0; }
+  .features-header { text-align: center; margin-bottom: 80px; }
+
+  .feat-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+    align-items: center;
+    margin-bottom: 96px;
+  }
+  .feat-block:last-child { margin-bottom: 0; }
+  .feat-block.reverse .feat-visual { order: -1; }
+
+  .feat-text { }
+  .feat-title {
+    font-size: clamp(22px, 2.5vw, 32px);
+    font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;
+    color: var(--color-text-primary); margin-bottom: 14px;
+  }
+  .feat-desc {
+    font-size: 15px; color: var(--color-text-secondary);
+    line-height: 1.75; margin-bottom: 24px;
+  }
+  .feat-link {
+    font-size: 13px; font-weight: 600;
+    color: var(--color-accent);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: gap 180ms var(--ease), color 150ms;
+  }
+  .feat-link:hover { gap: 10px; color: var(--color-accent-2); }
+  .feat-link svg { flex-shrink: 0; transition: transform 180ms var(--ease); }
+  .feat-link:hover svg { transform: translateX(2px); }
+
+  .feat-visual {
+    border-radius: 14px;
+    background: var(--color-bg-2);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    position: relative;
+  }
+  .feat-visual .img-gradient-wrap { height: 100%; }
+  .feat-mock {
+    padding: 20px;
+    min-height: 280px;
+  }
+  .mock-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--color-border);
+    margin-bottom: 16px;
+  }
+  .mock-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+  .mock-tab {
+    font-family: var(--mono); font-size: 10px; color: var(--color-text-muted);
+    margin-left: 8px; padding: 3px 10px;
+    background: var(--color-bg-3); border-radius: 5px;
+    border: 1px solid var(--color-border);
+  }
+  .mock-tab.active { color: var(--color-accent); border-color: var(--color-accent-border); background: var(--color-accent-dim); }
+
+  .mock-table { width: 100%; border-collapse: collapse; }
+  .mock-table th {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    color: var(--color-text-muted); text-align: left;
+    padding: 7px 10px; border-bottom: 1px solid var(--color-border);
+    letter-spacing: 0.05em;
+  }
+  .mock-table td {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--color-text-secondary);
+    padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .mock-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .mock-pill {
+    display: inline-block; font-size: 9px; font-weight: 600;
+    padding: 2px 8px; border-radius: 999px; letter-spacing: 0.04em;
+  }
+  .mock-pill.ok  { background: rgba(34,197,94,0.1);  color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+  .mock-pill.warn{ background: rgba(232,72,12,0.1);  color: var(--color-accent); border: 1px solid var(--color-accent-border); }
+
+  .mock-chat { display: flex; flex-direction: column; gap: 10px; }
+  .chat-msg { display: flex; gap: 9px; align-items: flex-start; }
+  .chat-msg.user { flex-direction: row-reverse; }
+  .chat-av {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; flex-shrink: 0;
+  }
+  .chat-av.ai  { background: var(--color-accent); color: #fff; }
+  .chat-av.usr { background: var(--color-bg-3); color: var(--color-text-secondary); font-family: var(--mono); }
+  .chat-bubble {
+    background: var(--color-bg-3); border: 1px solid var(--color-border);
+    border-radius: 4px 10px 10px 10px;
+    padding: 8px 12px; font-size: 12px;
+    color: var(--color-text-secondary); line-height: 1.5; max-width: 240px;
+  }
+  .chat-bubble.user { background: var(--color-accent-dim); border-color: var(--color-accent-border); border-radius: 10px 4px 10px 10px; color: var(--color-text-primary); }
+  .chat-mini-chart { margin-top: 8px; }
+  .chat-bars { display: flex; align-items: flex-end; gap: 3px; height: 32px; }
+  .chat-bar { flex: 1; border-radius: 2px 2px 0 0; background: linear-gradient(180deg, var(--color-accent) 0%, rgba(232,72,12,0.2) 100%); }
+  .typing-dots { display: flex; gap: 3px; align-items: center; padding: 2px 0; }
+  .typing-dots span {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--color-accent); opacity: 0.5;
+    animation: tdot 1.4s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes tdot { 0%,100%{opacity:.3;transform:translateY(0)} 50%{opacity:1;transform:translateY(-3px)} }
+
+  .mock-chart-area { padding: 12px 0; }
+  .chart-axis-label { font-family: var(--mono); font-size: 9px; color: var(--color-text-muted); margin-bottom: 8px; }
+  .chart-area { position: relative; height: 120px; display: flex; align-items: flex-end; gap: 5px; padding-bottom: 20px; border-bottom: 1px solid var(--color-border); }
+  .chart-vbar { flex: 1; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, var(--color-accent) 0%, rgba(232,72,12,0.25) 100%); transition: opacity 200ms; }
+  .chart-vbar:hover { opacity: 0.85; }
+  .chart-x-labels { display: flex; gap: 5px; margin-top: 6px; }
+  .chart-x-lbl { flex: 1; font-family: var(--mono); font-size: 8px; color: var(--color-text-muted); text-align: center; }
+
+  .mock-dash { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dash-card {
+    background: var(--color-bg-3); border: 1px solid var(--color-border);
+    border-radius: 8px; padding: 12px;
+  }
+  .dash-card-label { font-family: var(--mono); font-size: 9px; color: var(--color-text-muted); margin-bottom: 8px; letter-spacing: 0.05em; }
+  .dash-card-val { font-size: 20px; font-weight: 700; color: var(--color-text-primary); letter-spacing: -0.02em; }
+  .dash-card-sub { font-size: 10px; color: var(--color-accent); margin-top: 3px; }
+  .dash-mini-bars { display: flex; align-items: flex-end; gap: 3px; height: 36px; margin-top: 8px; }
+  .dash-bar { flex: 1; border-radius: 2px 2px 0 0; background: linear-gradient(180deg, var(--color-accent) 0%, rgba(232,72,12,0.2) 100%); }
+  .dash-sparkline {
+    height: 36px; margin-top: 8px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40'%3E%3Cpolyline points='0,35 15,28 30,32 45,18 60,22 75,10 90,14 100,8' fill='none' stroke='rgba(232,72,12,0.5)' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/100% 100%;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     HOW IT WORKS
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .hiw { padding: 112px 0; }
+  .hiw-header { text-align: center; margin-bottom: 64px; }
+  .hiw-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .hiw-card {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 14px; padding: 32px 28px;
+    transition: border-color 220ms, background 220ms, transform 220ms var(--ease);
+  }
+  .hiw-card:hover { border-color: var(--color-accent-border); background: rgba(232,72,12,0.03); transform: translateY(-2px); }
+  .hiw-num {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--color-accent); opacity: 0.7; margin-bottom: 20px;
+    letter-spacing: 0.06em;
+  }
+  .hiw-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--color-accent-dim);
+    border: 1px solid var(--color-accent-border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .hiw-icon svg { width: 18px; height: 18px; color: var(--color-accent); }
+  .hiw-title {
+    font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+    color: var(--color-text-primary); margin-bottom: 8px;
+  }
+  .hiw-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.65; }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     CTA BANNER
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .cta-banner { padding: 80px 0; }
+  .cta-box {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 72px 48px;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .cta-box::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(232,72,12,0.13) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .cta-box::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232,72,12,0.45), transparent);
+  }
+  .cta-h {
+    font-size: clamp(26px, 3.5vw, 46px);
+    font-weight: 600; letter-spacing: -0.025em; line-height: 1.1;
+    color: var(--color-text-primary); margin-bottom: 14px; position: relative;
+  }
+  .cta-p {
+    font-size: 15px; color: var(--color-text-secondary);
+    max-width: 400px; margin: 0 auto 40px; line-height: 1.7; position: relative;
+  }
+  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     FOOTER
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  footer { padding: 60px 0 40px; border-top: 1px solid var(--color-border); }
+  .footer-grid {
+    display: grid; grid-template-columns: 200px repeat(3, 1fr);
+    gap: 40px; margin-bottom: 48px;
+  }
+  .footer-brand { font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
+  .footer-brand em { color: var(--color-accent); font-style: normal; }
+  .footer-tagline { font-size: 13px; color: var(--color-text-muted); line-height: 1.6; }
+  .footer-col-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 16px; }
+  .footer-col-links { display: flex; flex-direction: column; gap: 10px; }
+  .footer-col-links a { font-size: 13px; color: var(--color-text-secondary); transition: color 140ms; }
+  .footer-col-links a:hover { color: var(--color-text-primary); }
+  .footer-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 28px; border-top: 1px solid var(--color-border);
+  }
+  .footer-copy { font-family: var(--mono); font-size: 11px; color: var(--color-text-muted); }
+  .footer-tech { display: flex; gap: 16px; }
+  .footer-tech span { font-family: var(--mono); font-size: 10px; color: var(--color-text-muted); opacity: 0.6; }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     RESPONSIVE
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  @media (max-width: 900px) {
+    .nav-links { display: none; }
+    .feat-block { grid-template-columns: 1fr; gap: 36px; }
+    .feat-block.reverse .feat-visual { order: 0; }
+    .hiw-steps { grid-template-columns: 1fr; }
+    .builton-grid { grid-template-columns: 1fr 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .footer-grid > div:first-child { grid-column: 1 / -1; }
+    .wrap, .wrap-sm { padding: 0 20px; }
+    .hero { padding: 120px 20px 0; }
+    .cta-box { padding: 48px 24px; }
+  }
+  @media (max-width: 540px) {
+    .footer-grid { grid-template-columns: 1fr; }
+    .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+    .mock-dash { grid-template-columns: 1fr; }
+    .builton-grid { grid-template-columns: 1fr; }
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible,
+  .nav-cta:focus-visible { border-radius: 10px; }
+  .builton-card:focus-visible { border-radius: 14px; }
+  .hiw-card:focus-visible { border-radius: 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .r { transition: opacity 200ms; transform: none; }
+  }
+  </style>
+</head>
+<body>
+
+<!-- ━━━━ NAVBAR ━━━━ -->
+<nav class="navbar">
+  <div class="wrap">
+    <a href="#" class="nav-logo">MNEMOS<em>.AI</em></a>
+    <ul class="nav-links">
+      <li><a href="#built-on">Stack</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+    </ul>
+    <a href="https://github.com/abi2310/mnemos" target="_blank" rel="noopener" class="nav-cta">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.164 6.839 9.49.5.09.682-.218.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.532 1.03 1.532 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.16 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      Try it free
+    </a>
+  </div>
+</nav>
+
+<!-- ━━━━ HERO ━━━━ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-noise"></div>
+
+  <div class="hero-content wrap">
+    <h1 class="hero-h1 r">
+      Analyze data through<br><span class="accent">conversation.</span>
+    </h1>
+
+    <p class="hero-sub r" style="transition-delay:60ms">
+      Upload tabular datasets, ask questions in natural language, and receive profiles, charts, dashboards, and AI-assisted analysis — no SQL required.
+    </p>
+
+    <div class="hero-actions r" style="transition-delay:120ms">
+      <a href="https://github.com/abi2310/mnemos" target="_blank" rel="noopener" class="btn-primary">
+        Try it free
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </a>
+      <a href="#how-it-works" class="btn-secondary">See how it works</a>
+    </div>
+
+    <div class="hero-window-wrap r" style="transition-delay:200ms">
+      <div class="hero-window">
+        <div class="window-in">
+          <div class="window-bar">
+            <span class="wdot wd-r"></span>
+            <span class="wdot wd-y"></span>
+            <span class="wdot wd-g"></span>
+            <span class="wurl">mnemos.ai demo</span>
+          </div>
+          <!-- ✦ VIDEO — ersetzt den alten Play-Button-Platzhalter -->
+          <div class="window-body">
+            <video
+              src="mnemosFinish.MOV"
+              controls
+              autoplay
+              muted
+              loop
+              playsinline
+              style="width:100%; height:100%; display:block; object-fit:cover;"
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━ BUILT ON ━━━━ -->
+<div class="divider"></div>
+<section class="builton" id="built-on">
+  <div class="wrap">
+    <div class="builton-header r">
+      <div class="builton-label">Built on</div>
+      <h2 class="builton-h2">Best-in-class open source, end-to-end.</h2>
+      <p class="builton-sub">Every layer of the stack is production-grade, open, and replaceable — no proprietary lock-in.</p>
+    </div>
+    <div class="builton-grid">
+      <div class="builton-card r" style="transition-delay:0ms">
+        <div class="builton-name">FastAPI</div>
+        <div class="builton-role">Backend API</div>
+        <div class="builton-desc">Async Python API framework powering all data ingestion, analysis routing, and artifact serving endpoints.</div>
+      </div>
+      <div class="builton-card r" style="transition-delay:60ms">
+        <div class="builton-name">LangGraph</div>
+        <div class="builton-role">Agent Orchestration</div>
+        <div class="builton-desc">Structured agentic workflow with clarification gates, validated plan nodes, and deterministic execution — not a prompt loop.</div>
+      </div>
+      <div class="builton-card r" style="transition-delay:120ms">
+        <div class="builton-name">React 19</div>
+        <div class="builton-role">Frontend</div>
+        <div class="builton-desc">Conversational workspace built with React's latest features — streaming responses, artifact panels, and persistent chat history.</div>
+      </div>
+      <div class="builton-card r" style="transition-delay:180ms">
+        <div class="builton-name">pandas</div>
+        <div class="builton-role">Data Processing</div>
+        <div class="builton-desc">Handles CSV, XLSX, Parquet, and JSON ingestion with schema detection, type inference, and quality reporting.</div>
+      </div>
+      <div class="builton-card r" style="transition-delay:240ms">
+        <div class="builton-name">Matplotlib</div>
+        <div class="builton-role">Visualization</div>
+        <div class="builton-desc">Deterministic chart rendering — every bar chart, line graph, and histogram is validated and stored as a reproducible artifact.</div>
+      </div>
+      <div class="builton-card r" style="transition-delay:300ms">
+        <div class="builton-name">OpenAI</div>
+        <div class="builton-role">LLM Integration</div>
+        <div class="builton-desc">Structured-output LLM calls for intent parsing and plan generation. Works with heuristic fallback when no API key is configured.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ━━━━ FEATURES ━━━━ -->
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="features-header r">
+      <div class="pill-badge">Features</div>
+      <h2 class="section-h2">Everything you need<br>from upload to insight.</h2>
+      <p class="section-sub center">A structured pipeline with validation, deterministic rendering, and persistent storage — not just a prompt wrapper around an LLM.</p>
+    </div>
+
+    <!-- Feature 1: Data Upload -->
+    <div class="feat-block r" style="transition-delay:0ms">
+      <div class="feat-text">
+        <div class="pill-badge">Data Ingestion</div>
+        <h3 class="feat-title">Upload any tabular dataset and get instant profiling.</h3>
+        <p class="feat-desc">Drop a CSV, XLSX, Parquet, or JSON file. The pandas-based quality pipeline runs automatically — schema detection, missing-value analysis, type inference, and a quality report, all without configuration.</p>
+        <a href="https://github.com/abi2310/mnemos" target="_blank" rel="noopener" class="feat-link">View on GitHub <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </div>
+      <div class="feat-visual">
+        <div class="img-gradient-wrap">
+          <div class="feat-mock">
+            <div class="mock-bar">
+              <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+              <span class="mock-tab active">Datasets</span>
+              <span class="mock-tab">Quality Report</span>
+            </div>
+            <table class="mock-table">
+              <thead>
+                <tr>
+                  <th>Column</th><th>Type</th><th>Missing</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>revenue</td><td>float64</td><td>0%</td><td><span class="mock-pill ok">Clean</span></td></tr>
+                <tr><td>region</td><td>object</td><td>0%</td><td><span class="mock-pill ok">Clean</span></td></tr>
+                <tr><td>date</td><td>datetime</td><td>2%</td><td><span class="mock-pill warn">2 missing</span></td></tr>
+                <tr><td>category</td><td>object</td><td>0%</td><td><span class="mock-pill ok">Clean</span></td></tr>
+                <tr><td>units_sold</td><td>int64</td><td>0%</td><td><span class="mock-pill ok">Clean</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 2: NL Analysis (reversed) -->
+    <div class="feat-block reverse r" style="transition-delay:60ms">
+      <div class="feat-text">
+        <div class="pill-badge">AI Workflow</div>
+        <h3 class="feat-title">Ask any question. The agent does the rest.</h3>
+        <p class="feat-desc">Powered by LangGraph, the analysis agent interprets your intent, builds a validated plan, and asks for clarification when a request is ambiguous — no silent hallucination, no guessing.</p>
+        <a href="https://github.com/abi2310/mnemos" target="_blank" rel="noopener" class="feat-link">Explore the workflow <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </div>
+      <div class="feat-visual">
+        <div class="img-gradient-wrap">
+          <div class="feat-mock">
+            <div class="mock-bar">
+              <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+              <span class="mock-tab active">Explore</span>
+              <span class="mock-tab">sales_q3.csv</span>
+            </div>
+            <div class="mock-chat">
+              <div class="chat-msg">
+                <div class="chat-av ai">M</div>
+                <div class="chat-bubble">Dataset loaded. 1,240 rows, 8 columns. No critical issues detected. What would you like to analyze?</div>
+              </div>
+              <div class="chat-msg user">
+                <div class="chat-av usr">U</div>
+                <div class="chat-bubble user">Show monthly revenue trends for Q3</div>
+              </div>
+              <div class="chat-msg">
+                <div class="chat-av ai">M</div>
+                <div class="chat-bubble">
+                  Analyzing revenue by month for Q3…
+                  <div class="chat-mini-chart">
+                    <div class="chat-bars">
+                      <div class="chat-bar" style="height:55%"></div>
+                      <div class="chat-bar" style="height:72%"></div>
+                      <div class="chat-bar" style="height:48%"></div>
+                      <div class="chat-bar" style="height:88%"></div>
+                      <div class="chat-bar" style="height:65%"></div>
+                      <div class="chat-bar" style="height:95%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="chat-msg">
+                <div class="chat-av ai">M</div>
+                <div class="chat-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3: Charts -->
+    <div class="feat-block r" style="transition-delay:120ms">
+      <div class="feat-text">
+        <div class="pill-badge">Visualization</div>
+        <h3 class="feat-title">Deterministic charts — no hallucinated visualizations.</h3>
+        <p class="feat-desc">Every chart is rendered via Matplotlib with validated specifications. Bar, line, histogram, and scatter plots — fully reproducible, stored as artifacts, and served directly through the FastAPI /storage route.</p>
+        <a href="https://github.com/abi2310/mnemos" target="_blank" rel="noopener" class="feat-link">View renderers <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </div>
+      <div class="feat-visual">
+        <div class="img-gradient-wrap">
+          <div class="feat-mock">
+            <div class="mock-bar">
+              <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+              <span class="mock-tab active">Chart Output</span>
+              <span class="mock-tab">revenue_q3_bar.png</span>
+            </div>
+            <div class="mock-chart-area">
+              <div class="chart-axis-label">MONTHLY REVENUE — Q3 2024</div>
+              <div class="chart-area">
+                <div class="chart-vbar" style="height:52%"></div>
+                <div class="chart-vbar" style="height:68%"></div>
+                <div class="chart-vbar" style="height:44%"></div>
+                <div class="chart-vbar" style="height:86%"></div>
+                <div class="chart-vbar" style="height:60%"></div>
+                <div class="chart-vbar" style="height:95%"></div>
+                <div class="chart-vbar" style="height:74%"></div>
+                <div class="chart-vbar" style="height:80%"></div>
+                <div class="chart-vbar" style="height:58%"></div>
+              </div>
+              <div class="chart-x-labels">
+                <div class="chart-x-lbl">Jul</div>
+                <div class="chart-x-lbl">Aug</div>
+                <div class="chart-x-lbl">—</div>
+                <div class="chart-x-lbl">Sep</div>
+                <div class="chart-x-lbl">—</div>
+                <div class="chart-x-lbl">Oct</div>
+                <div class="chart-x-lbl">—</div>
+                <div class="chart-x-lbl">Nov</div>
+                <div class="chart-x-lbl">Dec</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 4: Dashboard (reversed) -->
+    <div class="feat-block reverse r" style="transition-delay:180ms">
+      <div class="feat-text">
+        <div class="pill-badge">Dashboard</div>
+        <h3 class="feat-title">Multi-panel dashboards from a single request.</h3>
+        <p class="feat-desc">Ask for a full dashboard and receive multiple chart panels assembled as a single artifact. The React workspace displays all panels inline in the chat, stored permanently in the /storage route.</p>
+        <a href="https://github.com/abi2310/mnemos" target="_blank" rel="noopener" class="feat-link">Explore workspace <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </div>
+      <div class="feat-visual">
+        <div class="img-gradient-wrap">
+          <div class="feat-mock">
+            <div class="mock-bar">
+              <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+              <span class="mock-tab active">Dashboard</span>
+              <span class="mock-tab">4 panels</span>
+            </div>
+            <div class="mock-dash">
+              <div class="dash-card">
+                <div class="dash-card-label">TOTAL REVENUE</div>
+                <div class="dash-card-val">$2.4M</div>
+                <div class="dash-card-sub">↑ 12.4% vs last quarter</div>
+                <div class="dash-sparkline"></div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-label">UNITS SOLD</div>
+                <div class="dash-card-val">18,420</div>
+                <div class="dash-card-sub">↑ 8.1% vs last quarter</div>
+                <div class="dash-mini-bars">
+                  <div class="dash-bar" style="height:45%"></div>
+                  <div class="dash-bar" style="height:60%"></div>
+                  <div class="dash-bar" style="height:38%"></div>
+                  <div class="dash-bar" style="height:80%"></div>
+                  <div class="dash-bar" style="height:55%"></div>
+                  <div class="dash-bar" style="height:90%"></div>
+                </div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-label">TOP REGION</div>
+                <div class="dash-card-val">West</div>
+                <div class="dash-card-sub">34% of total revenue</div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-label">AVG ORDER</div>
+                <div class="dash-card-val">$130</div>
+                <div class="dash-card-sub">↓ 2.3% vs last quarter</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ━━━━ HOW IT WORKS ━━━━ -->
+<section class="hiw" id="how-it-works">
+  <div class="wrap">
+    <div class="hiw-header r">
+      <div class="pill-badge">How It Works</div>
+      <h2 class="section-h2">From file to insight in three steps.</h2>
+      <p class="section-sub center">No configuration, no SQL, no dashboarding tool. Just upload, ask, and analyze.</p>
+    </div>
+    <div class="hiw-steps">
+      <div class="hiw-card r" style="transition-delay:0ms">
+        <div class="hiw-num">01</div>
+        <div class="hiw-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+        </div>
+        <div class="hiw-title">Upload your dataset</div>
+        <div class="hiw-desc">Drop a CSV, XLSX, Parquet, or JSON file. The quality pipeline runs instantly — schema detection, missing-value analysis, and a quality report, all automatic.</div>
+      </div>
+      <div class="hiw-card r" style="transition-delay:80ms">
+        <div class="hiw-num">02</div>
+        <div class="hiw-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+        </div>
+        <div class="hiw-title">Ask a question</div>
+        <div class="hiw-desc">Type your question in plain language — "Show revenue trends for Q3" or "Which category has the most missing values?" The LangGraph agent interprets intent and builds a validated plan.</div>
+      </div>
+      <div class="hiw-card r" style="transition-delay:160ms">
+        <div class="hiw-num">03</div>
+        <div class="hiw-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+        </div>
+        <div class="hiw-title">Get your analysis</div>
+        <div class="hiw-desc">Receive text answers, bar charts, line graphs, histograms, scatter plots, or full multi-panel dashboards — all rendered deterministically and persisted in the chat history.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━ CTA BANNER ━━━━ -->
+<section class="cta-banner">
+  <div class="wrap">
+    <div class="cta-box r">
+      <h2 class="cta-h">Ready to analyze your data<br>through conversation?</h2>
+      <p class="cta-p">Open source, self-hosted, and free. Clone the repository and start asking questions in minutes.</p>
+      <div class="cta-row">
+        <a href="https://github.com/abi2310/mnemos" target="_blank" rel="noopener" class="btn-primary">
+          View on GitHub
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="#how-it-works" class="btn-secondary">See how it works</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━ FOOTER ━━━━ -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">MNEMOS<em>.AI</em></div>
+        <div class="footer-tagline">Conversational data analysis for tabular datasets. Open source, built with FastAPI, LangGraph, and React 19.</div>
+      </div>
+      <div>
+        <div class="footer-col-title">Product</div>
+        <div class="footer-col-links">
+          <a href="#built-on">Stack</a>
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How It Works</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Stack</div>
+        <div class="footer-col-links">
+          <a href="https://fastapi.tiangolo.com" target="_blank" rel="noopener">FastAPI</a>
+          <a href="https://langchain-ai.github.io/langgraph/" target="_blank" rel="noopener">LangGraph</a>
+          <a href="https://react.dev" target="_blank" rel="noopener">React 19</a>
+          <a href="https://pandas.pydata.org" target="_blank" rel="noopener">pandas</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Open Source</div>
+        <div class="footer-col-links">
+          <a href="https://github.com/abi2310/mnemos" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/abi2310/mnemos/issues" target="_blank" rel="noopener">Issues</a>
+          <a href="https://github.com/abi2310/mnemos/pulls" target="_blank" rel="noopener">Pull Requests</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2025 MNEMOS.AI</div>
+      <div class="footer-tech">
+        <span>FastAPI</span>
+        <span>·</span>
+        <span>LangGraph</span>
+        <span>·</span>
+        <span>React 19</span>
+        <span>·</span>
+        <span>Matplotlib</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ━━━━ SCRIPTS ━━━━ -->
+<script>
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px -24px 0px' });
+  document.querySelectorAll('.r').forEach(el => io.observe(el));
+</script>
+</body>
+</html>
